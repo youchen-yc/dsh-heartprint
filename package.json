@@ -1,1 +1,58 @@
-
+{
+  "name": "dsh-heartprint",
+  "version": "1.0.4",
+  "description": "心印：AI 性格、情感与记忆插件。按时间分层压缩/淡忘记忆，长期保留性格形成、情感与重要特殊事件节点，维护双份同步记忆文档与一份加密档案。",
+  "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "lib/*.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true
+    }
+  },
+  "engines": {
+    "node": ">=20",
+    "dsh": ">=0.2.1-rc.1"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "memory",
+    "emotion",
+    "personality",
+    "forgetting-curve",
+    "companion"
+  ],
+  "license": "MIT",
+  "author": "youchen-yc",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/youchen-yc/dsh-heartprint.git"
+  },
+  "homepage": "https://github.com/youchen-yc/dsh-heartprint#readme",
+  "bugs": {
+    "url": "https://github.com/youchen-yc/dsh-heartprint/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
