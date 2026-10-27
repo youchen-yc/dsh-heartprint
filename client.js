@@ -171,7 +171,6 @@ window.__ModuleLoader__.load({
       return h('div', { style: S.wrap },
         h('div', { style: S.card },
           h('h3', { style: S.title }, '心印 · 设定'),
-          h('p', { style: S.hint }, '这些是「你自己设置」的部分：AI 被问起性格、人格或价值观时，只会回答这里填的内容。'),
           h(Field, { label: '名字', hint: '交付的文件名会用到它；留空时暂用「心印」。' },
             h('input', { style: S.input, value: form.personaName, onChange: update('personaName'), placeholder: '给这个 AI 起的名字' })),
           h(Field, { label: '人格设定', hint: '希望它是什么样的身份、语气、称呼方式；最多 400 字。' },
