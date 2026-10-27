@@ -213,10 +213,12 @@ window.__ModuleLoader__.load({
     return {
       inject: ['slots'],
       apply(ctx) {
-        ctx.slots.inject('settings.plugins.tab', () => ctx.slots.register({
-          name: 'settings.plugins.tab',
+        // 放在设置侧栏的顶层列表里（账号与余额 / 通用设置 / … 那一列），
+        // order 50：排在「插件守护 45」之后、「会话修复 60」之前。
+        ctx.slots.inject('settings.section', () => ctx.slots.register({
+          name: 'settings.section',
           id: 'heartprint',
-          order: 80,
+          order: 50,
           label: () => '心印',
         }, HeartprintSettings))
       },
