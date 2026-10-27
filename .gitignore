@@ -1,0 +1,19 @@
+# 依赖与构建产物
+node_modules/
+*.log
+
+# 本地资料（不公开）
+发布到市场.md
+需求对照.md
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 本地数据（正常不会出现在这里，保险起见）
+memories.json
+policy.json
+core-baseline.json
+.vault/
+docs/
