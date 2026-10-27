@@ -199,7 +199,7 @@ window.__ModuleLoader__.load({
         ),
         h('div', { style: S.card },
           h('h3', { style: S.title }, '遗忘日历（查看）'),
-          h('p', { style: S.hint }, `重要阈值 ${policy.importantThreshold ?? 70} · 次重要阈值 ${policy.secondaryThreshold ?? 40} · 加密档案同步 ${policy.syncIntervalDays ?? 30} 天`),
+          h('p', { style: S.hint }, `重要阈值 ${policy.importantThreshold ?? 70} · 次重要阈值 ${policy.secondaryThreshold ?? 40} · 自动维护 ${policy.syncIntervalDays ?? 30} 天/次`),
           h('p', { style: S.hint }, '要精确调整每层日期，用对话让 AI 调 heartprint_admin action=policy。'),
         ),
         h('div', { style: S.actions },
