@@ -22,7 +22,7 @@ import test from 'node:test'
 import { promisify } from 'node:util'
 
 import { apply } from '../index.js'
-import { onboardingLines, renderPromptContext } from '../lib/engine.js'
+import { onboardingLines, planMaintenance, renderPromptContext } from '../lib/engine.js'
 import { createStore } from '../lib/store.js'
 import { vaultStats } from '../lib/vault.js'
 import { DEFAULT_POLICY, FEELING_STAGES, resolvePolicy } from '../lib/policy.js'
@@ -1051,4 +1051,87 @@ test('人格与性格设定可写入 policy，并出现在状态与记忆上下�
     assert.match(context, /人格：温柔的大姐姐/)
     assert.match(context, /性格：认真、有点小调皮/)
   })
+})
+
+// ---------------------------------------------------------------------------
+// 长时间没开：离开超过 7 天就冻结这段时间，不补算遗忘；回来只记一句离开天数
+// ---------------------------------------------------------------------------
+
+test('离开超过 7 天：记忆冻结不补算，只记录离开天数', () => {
+  const now = Date.now()
+  const policy = resolvePolicy(DEFAULT_POLICY)
+  const rec = record({
+    id: 'away-freeze',
+    happenedAt: now - 14 * DAY_MS,
+    createdAt: now - 14 * DAY_MS,
+    updatedAt: now - 14 * DAY_MS,
+    importance: 50,
+    detailLevel: 2,
+    feelingStage: 'full',
+    state: 'active',
+  })
+  const store = {
+    version: 1,
+    createdAt: now - 30 * DAY_MS,
+    updatedAt: now,
+    meta: { lastMaintainAt: now - 8 * DAY_MS },
+    records: [rec],
+  }
+  const plan = planMaintenance({ store, policy, now })
+  const after = plan.store.records[0]
+
+  assert.deepEqual(plan.absence, { days: 8, at: now })
+  assert.equal(plan.store.meta.lastAbsenceDays, 8)
+  assert.equal(after.detailLevel, 2, '冻结后不应被压缩')
+  assert.equal(after.state, 'active')
+  assert.equal(after.content, rec.content, '正文不应变化')
+  assert.ok(Number(after.frozenMs) >= 7.9 * DAY_MS, '应记录被冻结的时长')
+  assert.equal(plan.changes.compressed + plan.changes.forgotten + plan.changes.merged + plan.changes.deleted, 0)
+})
+
+test('离开不超过 7 天：正常衰减，不做冻结', () => {
+  const now = Date.now()
+  const policy = resolvePolicy(DEFAULT_POLICY)
+  const rec = record({
+    id: 'away-normal',
+    happenedAt: now - 9 * DAY_MS,
+    createdAt: now - 9 * DAY_MS,
+    updatedAt: now - 9 * DAY_MS,
+    importance: 50,
+    detailLevel: 2,
+    feelingStage: 'full',
+    state: 'active',
+  })
+  const store = {
+    version: 1,
+    createdAt: now - 30 * DAY_MS,
+    updatedAt: now,
+    meta: { lastMaintainAt: now - 3 * DAY_MS },
+    records: [rec],
+  }
+  const plan = planMaintenance({ store, policy, now })
+  const after = plan.store.records[0]
+
+  assert.equal(plan.absence, null)
+  assert.equal(after.frozenMs, undefined, '短间隔不冻结')
+  assert.equal(after.detailLevel, 1, '9 天的次重要记忆应被压缩成摘要')
+})
+
+test('离开提示会进入记忆上下文，24 小时后自动消失', () => {
+  const now = Date.now()
+  const policy = resolvePolicy(DEFAULT_POLICY)
+  const store = {
+    version: 1,
+    records: [],
+    meta: { lastAbsenceAt: now - 60 * 60 * 1000, lastAbsenceDays: 8 },
+  }
+  const context = renderPromptContext(store, policy, now)
+  assert.match(context, /离开了约 8 天/)
+
+  const stale = {
+    version: 1,
+    records: [],
+    meta: { lastAbsenceAt: now - 2 * DAY_MS, lastAbsenceDays: 8 },
+  }
+  assert.equal(/离开了约 8 天/.test(renderPromptContext(stale, policy, now)), false)
 })

@@ -233,6 +233,15 @@ export function apply(ctx, rawConfig = {}) {
     return now >= lastVaultAt + interval ? now : lastVaultAt + interval
   }
 
+  /** 「上次离开」：最近一次长间隔后 7 天内显示一行，之后不再挂着。 */
+  function absentLine(store, policy, now) {
+    const at = Number(store?.meta?.lastAbsenceAt) || 0
+    const days = Number(store?.meta?.lastAbsenceDays) || 0
+    if (!at || days <= 0) return []
+    if (now - at > 7 * DAY_MS) return []
+    return [`- 上次离开：约 ${days} 天（超过 ${policy.awayGraceDays ?? 7} 天，这段时间记忆未补算）`]
+  }
+
   async function runMaintenanceInternal({ now = Date.now(), forceVault = false, reason = 'maintain' } = {}) {
     await ensureReady()
     const storeObj = state.storeObj
@@ -418,6 +427,7 @@ export function apply(ctx, rawConfig = {}) {
             nextAt: plan.delivery.nextAt,
           }
         : null,
+      absence: plan.absence || null,
     }
   }
 
@@ -600,6 +610,7 @@ export function apply(ctx, rawConfig = {}) {
       `- 下次加密档案更新：${formatDateTime(nextVaultAtFrom(now, lastVaultAt))}`,
       `- 人设：名字${state.policy.personaName ? `「${state.policy.personaName}」` : '未设置'} · 人格${state.policy.personaProfile ? '已设置' : '未设置'} · 性格${state.policy.characterProfile ? '已设置' : '未设置'}`,
       `- 设置页接口：${settingsApiReady ? '已就绪' : '未就绪（设置页会一直显示“正在读取…”）'}`,
+      ...absentLine(state.store, state.policy, now),
       '- 遗忘日历：',
     ]
     for (const layer of state.policy.layers) {
@@ -656,6 +667,7 @@ export function apply(ctx, rawConfig = {}) {
     }
     if (run.delivery?.path) lines.push(`- 自动交付：${run.delivery.path}（陪伴 ${run.delivery.duration}）`)
     if (run.delivery?.due && !run.delivery.path) lines.push('- 自动交付：本轮到期但写入失败，见下方提示')
+    if (run.absence) lines.push(`- 上次离开：约 ${run.absence.days} 天（超过 ${state.policy.awayGraceDays ?? 7} 天，这段时间记忆未补算）`)
     if (run.warnings.length) lines.push(`- 提示：${run.warnings.join('；')}`)
     return {
       ok: true,
@@ -667,6 +679,7 @@ export function apply(ctx, rawConfig = {}) {
       documents: run.docPaths,
       bodyHash: run.bodyHash,
       delivery: run.delivery,
+      absence: run.absence,
     }
   }
 
