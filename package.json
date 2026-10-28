@@ -1,6 +1,6 @@
 {
   "name": "dsh-heartprint",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "心印：AI 性格、情感与记忆插件。按时间分层压缩/淡忘记忆，长期保留性格形成、情感与重要特殊事件节点，维护双份同步记忆文档与一份加密档案。",
   "type": "module",
   "exports": {
@@ -56,10 +56,12 @@
     "access": "public"
   },
   "scripts": {
-    "test": "node --test test/engine.test.mjs test/tool.test.mjs test/regression.test.mjs test/alignment.test.mjs test/security.test.mjs",
+    "test": "node --test test/engine.test.mjs test/tool.test.mjs test/regression.test.mjs test/alignment.test.mjs test/security.test.mjs test/release.test.mjs",
     "sbom": "node scripts/sbom.mjs",
     "sbom:check": "node scripts/sbom.mjs --check",
     "secret-scan": "node scripts/secret-scan.mjs",
-    "verify": "node --test test/engine.test.mjs test/tool.test.mjs test/regression.test.mjs test/alignment.test.mjs test/security.test.mjs && node scripts/secret-scan.mjs && node scripts/sbom.mjs --check"
+    "verify": "node --test test/engine.test.mjs test/tool.test.mjs test/regression.test.mjs test/alignment.test.mjs test/security.test.mjs test/release.test.mjs && node scripts/secret-scan.mjs && node scripts/sbom.mjs --check && node scripts/release-check.mjs",
+    "release-check": "node scripts/release-check.mjs",
+    "prepublishOnly": "node scripts/release-check.mjs"
   }
 }

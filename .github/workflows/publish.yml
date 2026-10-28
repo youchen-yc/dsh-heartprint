@@ -6,7 +6,7 @@ on:
     tags: ['v*']
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 jobs:
@@ -21,7 +21,9 @@ jobs:
       - name: Install (no deps)
         run: npm install --no-audit --no-fund
       - name: Tests
-        run: node --test test/engine.test.mjs test/tool.test.mjs test/regression.test.mjs test/alignment.test.mjs test/security.test.mjs
+        run: node --test test/engine.test.mjs test/tool.test.mjs test/regression.test.mjs test/alignment.test.mjs test/security.test.mjs test/release.test.mjs
+      - name: Legacy-version warning check
+        run: node scripts/release-check.mjs
       - name: Regenerate SBOM
         run: node scripts/sbom.mjs
       - name: Publish with provenance (SLSA / Sigstore)
@@ -33,3 +35,18 @@ jobs:
         with:
           name: sbom-cyclonedx
           path: sbom.cdx.json
+      - name: Create GitHub Release with legacy-version warning
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          BODY="$(VERSION="$VERSION" node -e "
+            const p = require('./release-policy.json').legacyWarning
+            const lines = ['## 心印 dsh-heartprint v' + process.env.VERSION, '']
+            if (p && Number(p.remainingReleases) > 0) {
+              lines.push(p.text, '', '> 这条提示还会在接下来的 ' + p.remainingReleases + ' 个新版本里保留。', '')
+            }
+            lines.push('### 变更', '', '- 见仓库提交记录与 README。', '')
+            process.stdout.write(lines.join('\n'))
+          ")"
+          gh release view "v$VERSION" >/dev/null 2>&1 || gh release create "v$VERSION" --title "v$VERSION" --notes "$BODY"
