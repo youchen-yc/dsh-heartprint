@@ -147,6 +147,14 @@ heartprint/
 
 设置页也有同样的配置：**设置 → 心印**（侧栏列表里）。
 
+## 安全
+
+- 信任边界与威胁模型：[`docs/security/trust-boundary.md`](docs/security/trust-boundary.md)
+- 六种安全架构的落实与复核命令：[`docs/security/architectures.md`](docs/security/architectures.md)
+- 安全策略与已知局限：[`SECURITY.md`](SECURITY.md)
+- 发布附带 CycloneDX SBOM：`sbom.cdx.json`（`npm run sbom:check` 校验）
+- 设置接口默认拒绝：来源必须本机同源，方法/Content-Type/体积/频率逐项校验；测试见 `test/security.test.mjs`
+
 ## 隐私边界（诚实版）
 
 - 插件**不联网、不上传**；记忆只存在本机的数据目录里。

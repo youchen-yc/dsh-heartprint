@@ -1,0 +1,36 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: ['20', '22', '24']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Syntax check
+        run: |
+          node --check index.js
+          node --check client.js
+          for f in lib/*.js; do node --check "$f"; done
+      - name: Tests
+        run: node --test test/engine.test.mjs test/tool.test.mjs test/regression.test.mjs test/alignment.test.mjs test/security.test.mjs
+      - name: SBOM consistency
+        run: node scripts/sbom.mjs --check
+      - name: Clean-install smoke test
+        run: |
+          mkdir -p "$RUNNER_TEMP/clean" && cd "$RUNNER_TEMP/clean"
+          npm init -y >/dev/null
+          npm install "$GITHUB_WORKSPACE" --no-audit --no-fund
+          node -e "import('dsh-heartprint').then(m => { if (typeof m.apply !== 'function') process.exit(1) })"

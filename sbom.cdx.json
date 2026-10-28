@@ -1,0 +1,361 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "serialNumber": "urn:uuid:50d8a3ba-eca9-226d-ca01-6f39dff11ea4",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-10-28T13:37:28.361Z",
+    "tools": [
+      {
+        "vendor": "heartprint",
+        "name": "scripts/sbom.mjs",
+        "version": "1.1.0"
+      }
+    ],
+    "component": {
+      "type": "application",
+      "bom-ref": "pkg:npm/dsh-heartprint@1.1.0",
+      "name": "dsh-heartprint",
+      "version": "1.1.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/dsh-heartprint@1.1.0",
+      "properties": [
+        {
+          "name": "dsh.bundle.patch",
+          "value": "./cordis.patch.yml"
+        },
+        {
+          "name": "engines.node",
+          "value": ">=20"
+        },
+        {
+          "name": "engines.dsh",
+          "value": ">=0.2.1-rc.1"
+        },
+        {
+          "name": "network",
+          "value": "none: no outbound connections, no telemetry"
+        }
+      ]
+    }
+  },
+  "components": [
+    {
+      "type": "file",
+      "bom-ref": "file:LICENSE",
+      "name": "LICENSE",
+      "version": "1.1.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "6eeab130a52364ab70699af5a174813ef6ceae233986e490d77f35c29eb7ba96"
+        }
+      ],
+      "properties": [
+        {
+          "name": "size",
+          "value": "1075"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "file:README.md",
+      "name": "README.md",
+      "version": "1.1.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "8e9f4a1ecdc1a48ec414f03dfc2976cfff68df8419ec1f4e1294bcbe11983677"
+        }
+      ],
+      "properties": [
+        {
+          "name": "size",
+          "value": "12149"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "file:client.js",
+      "name": "client.js",
+      "version": "1.1.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "222f4cfe353052e10e402317d0d5f3e7988008bc9cfc9ad1c662100e11a1acfe"
+        }
+      ],
+      "properties": [
+        {
+          "name": "size",
+          "value": "9764"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "file:cordis.patch.yml",
+      "name": "cordis.patch.yml",
+      "version": "1.1.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "bc497959dcbb21992a824f85969849938e1580b05fee269213d33f885aebae8a"
+        }
+      ],
+      "properties": [
+        {
+          "name": "size",
+          "value": "713"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "file:icon.svg",
+      "name": "icon.svg",
+      "version": "1.1.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "29a1deb12a676c03ea255eefa82003e888a5801748442d4034e538b4db1e392e"
+        }
+      ],
+      "properties": [
+        {
+          "name": "size",
+          "value": "1196"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "file:index.js",
+      "name": "index.js",
+      "version": "1.1.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "d70c94353a967abf593f91c0266741fe8ea586097d44dc7d84a280b2a2d03d93"
+        }
+      ],
+      "properties": [
+        {
+          "name": "size",
+          "value": "53458"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "file:lib/alignment.js",
+      "name": "lib/alignment.js",
+      "version": "1.1.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "bfd8efc529ca809aa7fc3f350e06f88d419d83c0b6d0cc50931907e09c9fd585"
+        }
+      ],
+      "properties": [
+        {
+          "name": "size",
+          "value": "8523"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "file:lib/decay.js",
+      "name": "lib/decay.js",
+      "version": "1.1.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "4e38b46409cc22f70709a765f1b31c6cc2cae8dee91fde361d9435e782f5ab9c"
+        }
+      ],
+      "properties": [
+        {
+          "name": "size",
+          "value": "14008"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "file:lib/docs.js",
+      "name": "lib/docs.js",
+      "version": "1.1.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "31bd1a35819fc256df64789c97a78c80e2ca5e311e2b8038b7db856f23923989"
+        }
+      ],
+      "properties": [
+        {
+          "name": "size",
+          "value": "14987"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "file:lib/engine.js",
+      "name": "lib/engine.js",
+      "version": "1.1.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "47d3199cb2ec0e8cb3c8297d1928f59d96effa6d075b22a0190a0974ae7dbc9a"
+        }
+      ],
+      "properties": [
+        {
+          "name": "size",
+          "value": "16685"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "file:lib/policy.js",
+      "name": "lib/policy.js",
+      "version": "1.1.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "a59f3bb98f599a36b9eb86a374864539115f93f1a0842a231269c668645e3f57"
+        }
+      ],
+      "properties": [
+        {
+          "name": "size",
+          "value": "17400"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "file:lib/store.js",
+      "name": "lib/store.js",
+      "version": "1.1.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "8db78e6dc543805c2493577fdfc71a362d91dc073d86342b3953b5890377290f"
+        }
+      ],
+      "properties": [
+        {
+          "name": "size",
+          "value": "8018"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "file:lib/text.js",
+      "name": "lib/text.js",
+      "version": "1.1.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "f83f9729eadc309e21655e40727fe2437aa5b3e7cc879756209df0d3f6b9aac9"
+        }
+      ],
+      "properties": [
+        {
+          "name": "size",
+          "value": "6534"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "file:lib/vault.js",
+      "name": "lib/vault.js",
+      "version": "1.1.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "66dd479cf2870d6c60549a32a85ea49a5ca078e91df86c43bbcdee880005b63f"
+        }
+      ],
+      "properties": [
+        {
+          "name": "size",
+          "value": "8379"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "file:locale/en.json",
+      "name": "locale/en.json",
+      "version": "1.1.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "f404d502070196fb0b43e920facfb1ce04dccdf194812717ba2ffc22310322b0"
+        }
+      ],
+      "properties": [
+        {
+          "name": "size",
+          "value": "577"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "file:locale/zh.json",
+      "name": "locale/zh.json",
+      "version": "1.1.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "55b0daa2bc2cfb4eebda91b1876c2ca48f3d8e28b641f13c9748ea6277795de7"
+        }
+      ],
+      "properties": [
+        {
+          "name": "size",
+          "value": "508"
+        }
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "pkg:npm/dsh-heartprint@1.1.0",
+      "dependsOn": [
+        "file:LICENSE",
+        "file:README.md",
+        "file:client.js",
+        "file:cordis.patch.yml",
+        "file:icon.svg",
+        "file:index.js",
+        "file:lib/alignment.js",
+        "file:lib/decay.js",
+        "file:lib/docs.js",
+        "file:lib/engine.js",
+        "file:lib/policy.js",
+        "file:lib/store.js",
+        "file:lib/text.js",
+        "file:lib/vault.js",
+        "file:locale/en.json",
+        "file:locale/zh.json"
+      ]
+    }
+  ]
+}

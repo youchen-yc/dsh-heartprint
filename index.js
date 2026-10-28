@@ -1048,11 +1048,22 @@ export function apply(ctx, rawConfig = {}) {
   // 设置页 API（同源 JSON，供 client.js 的配置表单读写 policy）
   // -------------------------------------------------------------------------
 
-  function sendJson(res, code, value) {
+  class ApiError extends Error {
+    constructor(status, code, message) {
+      super(message)
+      this.status = status
+      this.code = code
+    }
+  }
+
+  function sendJson(res, code, value, headers = {}) {
     try {
       res.writeHead(code, {
         'content-type': 'application/json; charset=utf-8',
         'cache-control': 'no-store',
+        'x-content-type-options': 'nosniff',
+        'referrer-policy': 'no-referrer',
+        ...headers,
       })
       res.end(JSON.stringify(value))
     } catch {
@@ -1067,7 +1078,7 @@ export function apply(ctx, rawConfig = {}) {
       req.on('data', (chunk) => {
         size += chunk.length
         if (size > limit) {
-          reject(new Error('请求体过大'))
+          reject(new ApiError(413, 'payload-too-large', '请求体过大'))
           req.destroy()
           return
         }
@@ -1077,25 +1088,50 @@ export function apply(ctx, rawConfig = {}) {
         try {
           resolve(chunks.length ? JSON.parse(Buffer.concat(chunks).toString('utf8')) : {})
         } catch {
-          reject(new Error('JSON 解析失败'))
+          reject(new ApiError(400, 'bad-json', 'JSON 解析失败'))
         }
       })
-      req.on('error', reject)
+      req.on('error', () => reject(new ApiError(400, 'bad-request', '读取请求失败')))
     })
   }
 
-  function requestAllowed(req, origin) {
+  function isLoopback(req) {
     const address = req.socket?.remoteAddress || ''
-    const loopback = address === '127.0.0.1'
+    return address === '127.0.0.1'
       || address === '::1'
       || address === '::ffff:127.0.0.1'
-    const header = req.headers.origin
-    if (!header) return loopback
+  }
+
+  function safeHost(value) {
     try {
-      return new URL(header).host === new URL(origin).host
+      return new URL(String(value)).host.toLowerCase()
     } catch {
-      return false
+      return ''
     }
+  }
+
+  /**
+   * 默认拒绝的准入判断：
+   *  - 没有 Origin：只接受回环地址（本机 curl / 同机进程）
+   *  - 有 Origin：必须与宿主同源；宿主 origin 还拿不到时只接受回环
+   */
+  function requestAllowed(req, origin) {
+    const header = String(req.headers.origin || '')
+    if (!header) return isLoopback(req)
+    const host = safeHost(header)
+    if (!host) return false
+    const own = safeHost(origin)
+    if (!own) return isLoopback(req)
+    return host === own
+  }
+
+  // 写操作限流：同一进程 60 秒内最多 20 次，防止本地脚本刷爆设置接口。
+  const apiWriteTimes = []
+  function allowWrite(now) {
+    while (apiWriteTimes.length && now - apiWriteTimes[0] > 60 * 1000) apiWriteTimes.shift()
+    if (apiWriteTimes.length >= 20) return false
+    apiWriteTimes.push(now)
+    return true
   }
 
   function webServerOrigin() {
@@ -1110,11 +1146,29 @@ export function apply(ctx, rawConfig = {}) {
   async function handleSettingsApi(req, res, originOf) {
     try {
       const origin = typeof originOf === 'function' ? originOf() : ''
-      if (origin && !requestAllowed(req, origin)) {
+      const url = new URL(req.url || '/', 'http://127.0.0.1')
+      const isStateRoute = url.pathname === '/dsh-heartprint/api/state'
+      const isPolicyRoute = url.pathname === '/dsh-heartprint/api/policy'
+
+      // 默认拒绝：只认这两个显式声明的路由，其余一律 404。
+      if (!isStateRoute && !isPolicyRoute) {
+        return sendJson(res, 404, { ok: false, error: { code: 'not-found', message: '未知接口' } })
+      }
+
+      // 第一道（来源）：跨站请求会带 Sec-Fetch-Site，明确写出 cross-site/same-site 的直接拒绝。
+      const fetchSite = String(req.headers['sec-fetch-site'] || '')
+      if (fetchSite && fetchSite !== 'same-origin' && fetchSite !== 'none') {
         return sendJson(res, 403, { ok: false, error: { code: 'forbidden', message: '只允许本机同源请求' } })
       }
-      const url = new URL(req.url || '/', 'http://127.0.0.1')
-      if (req.method === 'GET' && url.pathname === '/dsh-heartprint/api/state') {
+      // 第二道（来源）：Origin 必须同源；没有 Origin 时只接受回环地址。
+      if (!requestAllowed(req, origin)) {
+        return sendJson(res, 403, { ok: false, error: { code: 'forbidden', message: '只允许本机同源请求' } })
+      }
+
+      if (isStateRoute) {
+        if (req.method !== 'GET') {
+          return sendJson(res, 405, { ok: false, error: { code: 'method-not-allowed', message: '只支持 GET' } }, { allow: 'GET' })
+        }
         await ensureReady()
         const now = Date.now()
         const delivery = computeDelivery({ store: state.store, policy: state.policy, now })
@@ -1130,15 +1184,34 @@ export function apply(ctx, rawConfig = {}) {
           records: state.store.records.length,
         })
       }
-      if (req.method === 'POST' && url.pathname === '/dsh-heartprint/api/policy') {
-        const body = await readJsonBody(req)
-        const patch = body && typeof body.patch === 'object' && body.patch ? body.patch : {}
-        const result = await withLock(() => actionPolicy({ patch }))
-        return sendJson(res, result && result.ok === false ? 400 : 200, result)
+
+      // 第三道（方法与类型）：只收 POST + application/json，堵掉跨站表单的简单请求。
+      if (req.method !== 'POST') {
+        return sendJson(res, 405, { ok: false, error: { code: 'method-not-allowed', message: '只支持 POST' } }, { allow: 'POST' })
       }
-      return sendJson(res, 404, { ok: false, error: { code: 'not-found', message: '未知接口' } })
+      const contentType = String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase()
+      if (contentType !== 'application/json') {
+        return sendJson(res, 415, { ok: false, error: { code: 'unsupported-media-type', message: '只接受 application/json' } })
+      }
+      // 第四道（限流）：写操作 60 秒内最多 20 次。
+      if (!allowWrite(Date.now())) {
+        return sendJson(res, 429, { ok: false, error: { code: 'too-many-requests', message: '操作太频繁，请稍后再试' } }, { 'retry-after': '60' })
+      }
+      const body = await readJsonBody(req)
+      if (!body || typeof body !== 'object' || Array.isArray(body)) {
+        return sendJson(res, 400, { ok: false, error: { code: 'bad-body', message: '请求体必须是 JSON 对象' } })
+      }
+      const patch = body.patch && typeof body.patch === 'object' && !Array.isArray(body.patch) ? body.patch : null
+      if (!patch || !Object.keys(patch).length) {
+        return sendJson(res, 400, { ok: false, error: { code: 'bad-patch', message: 'patch 不能为空' } })
+      }
+      const result = await withLock(() => actionPolicy({ patch }))
+      return sendJson(res, result && result.ok === false ? 400 : 200, result)
     } catch (error) {
-      return sendJson(res, 500, { ok: false, error: { code: 'internal-error', message: messageOf(error) } })
+      if (error instanceof ApiError) {
+        return sendJson(res, error.status, { ok: false, error: { code: error.code, message: error.message } })
+      }
+      return sendJson(res, 500, { ok: false, error: { code: 'internal-error', message: '服务内部错误' } })
     }
   }
 
