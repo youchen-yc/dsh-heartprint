@@ -1,10 +1,10 @@
 {
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
-  "serialNumber": "urn:uuid:69c93608-c110-fff2-f1bb-797f0b8ef525",
+  "serialNumber": "urn:uuid:fd2a8c89-a475-961b-e4d3-6be3d3c4f3dd",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-10-28T14:20:16.144Z",
+    "timestamp": "2026-10-28T22:47:13.416Z",
     "tools": [
       {
         "vendor": "heartprint",
@@ -72,13 +72,13 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "9adc791c8bae4909dd9da20d7a6fbd823e19af884edcd208fe1fd96a2bb3bb54"
+          "content": "e5214e2f058cf9cfcb663a17cf55d0b40c88a65e2ee682d205e587d82e214483"
         }
       ],
       "properties": [
         {
           "name": "size",
-          "value": "12835"
+          "value": "1019"
         }
       ]
     },
@@ -144,13 +144,13 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "4bfbc1265aa249480fb33de061050272a1d12ef22ac51c864fc2161caa5d3fce"
+          "content": "55b6c6cc0043914c2d40f180e1b966153bd598934bf4976e399092c8b995f20d"
         }
       ],
       "properties": [
         {
           "name": "size",
-          "value": "55717"
+          "value": "57045"
         }
       ]
     },
@@ -180,13 +180,13 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "4e38b46409cc22f70709a765f1b31c6cc2cae8dee91fde361d9435e782f5ab9c"
+          "content": "1c79ed867e2c96efeebed0c481408b83349dd6f1923d14baca5e58e01c6e9d7b"
         }
       ],
       "properties": [
         {
           "name": "size",
-          "value": "14008"
+          "value": "14431"
         }
       ]
     },
@@ -198,13 +198,13 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "31bd1a35819fc256df64789c97a78c80e2ca5e311e2b8038b7db856f23923989"
+          "content": "ab573431464a0f0b1ef0d9917a7cc63587fe63b3f3ae3f050f1db63994f9cda2"
         }
       ],
       "properties": [
         {
           "name": "size",
-          "value": "14987"
+          "value": "15317"
         }
       ]
     },
@@ -216,13 +216,13 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "47d3199cb2ec0e8cb3c8297d1928f59d96effa6d075b22a0190a0974ae7dbc9a"
+          "content": "5c2a2839dfcf2d2384ecb2be204cb0e3369d53401953d3dfe1740d3e1235eb87"
         }
       ],
       "properties": [
         {
           "name": "size",
-          "value": "16685"
+          "value": "17075"
         }
       ]
     },
@@ -252,13 +252,13 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "8db78e6dc543805c2493577fdfc71a362d91dc073d86342b3953b5890377290f"
+          "content": "ccad9f03a5a520ed4d178069d786497ee0adc8cf3fd2f7b2b7de89cf270e4639"
         }
       ],
       "properties": [
         {
           "name": "size",
-          "value": "8018"
+          "value": "8287"
         }
       ]
     },
@@ -306,13 +306,13 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "f404d502070196fb0b43e920facfb1ce04dccdf194812717ba2ffc22310322b0"
+          "content": "022056f744e42c25f3f7a8704212b3642b7a9e20c511c515d5071edeaaf121cc"
         }
       ],
       "properties": [
         {
           "name": "size",
-          "value": "577"
+          "value": "426"
         }
       ]
     },
@@ -324,13 +324,13 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "55b0daa2bc2cfb4eebda91b1876c2ca48f3d8e28b641f13c9748ea6277795de7"
+          "content": "05fbecc507b31e170dc1eb41acb6da01e5955d784fcde43576f3796811a13574"
         }
       ],
       "properties": [
         {
           "name": "size",
-          "value": "508"
+          "value": "378"
         }
       ]
     }

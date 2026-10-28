@@ -1,7 +1,7 @@
 {
   "name": "dsh-heartprint",
   "version": "1.1.1",
-  "description": "心印：AI 性格、情感与记忆插件。按时间分层压缩/淡忘记忆，长期保留性格形成、情感与重要特殊事件节点，维护双份同步记忆文档与一份加密档案。",
+  "description": "心印：记忆类插件。可以设置性格、人格，给它取名字；有情绪，介意勿下载；有淡忘功能，只淡忘琐碎无用的信息，重要的事情会经过分析保留；会记得你跟它之间最重要的事情；有特殊事件功能，特殊意义的事情会被记住。",
   "type": "module",
   "exports": {
     ".": "./index.js",
@@ -36,11 +36,7 @@
     "dsh",
     "dsh-plugin",
     "deepseek-harness",
-    "memory",
-    "emotion",
-    "personality",
-    "forgetting-curve",
-    "companion"
+    "memory"
   ],
   "license": "MIT",
   "author": "youchen-yc",

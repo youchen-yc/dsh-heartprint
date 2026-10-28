@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Heartprint · Persona & Emotion Memory",
-    "description": "A memory that fades like a person's: recent days stay vivid, older memories compress, featureless trivia becomes a one-line gist after 90 days, merges after half a year and is deleted after a year, while personality and emotional nodes endure. Painful facts remain, but the painful feelings fade by a forced rule. Maintains memory documents plus a local backup; auto-delivers the first companion document after 3 months, then one every month, and keeps the delivered file updated."
+    "title": "Heartprint · Memory Plugin",
+    "description": "A memory plugin: you can set its personality and character, and give it a name. It shows emotions — skip it if that bothers you. It forgets, but only trivial and useless details; important things are analysed and kept. It remembers the most important things between you and it. Special-event support keeps things that matter to you."
   }
 }
