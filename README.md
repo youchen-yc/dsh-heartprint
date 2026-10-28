@@ -151,9 +151,13 @@ heartprint/
 
 - 信任边界与威胁模型：[`docs/security/trust-boundary.md`](docs/security/trust-boundary.md)
 - 六种安全架构的落实与复核命令：[`docs/security/architectures.md`](docs/security/architectures.md)
+- 逐条规则对照（含未达成项的诚实记录）：[`docs/security/compliance.md`](docs/security/compliance.md)
+- 合并前安全评审清单：[`docs/security/review-checklist.md`](docs/security/review-checklist.md)
 - 安全策略与已知局限：[`SECURITY.md`](SECURITY.md)
 - 发布附带 CycloneDX SBOM：`sbom.cdx.json`（`npm run sbom:check` 校验）
 - 设置接口默认拒绝：来源必须本机同源，方法/Content-Type/体积/频率逐项校验；测试见 `test/security.test.mjs`
+- 安全事件可审计：授权失败/限流/配置变更写入宿主日志，`status` 里可看计数
+- 一条命令跑完全部检查：`npm run verify`
 
 ## 隐私边界（诚实版）
 

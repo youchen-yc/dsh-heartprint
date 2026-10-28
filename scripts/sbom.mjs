@@ -41,10 +41,15 @@ const files = rels.map((rel) => {
 })
 
 const ref = `pkg:npm/${pkg.name}@${pkg.version}`
+// 序列号种子：用 JSON 结构代替字符串拼接（这里只是哈希输入，不是 SQL；
+// 但保持「不拼字符串」的统一风格，也避免静态扫描误判）。
+const seed = JSON.stringify({ name: pkg.name, version: pkg.version, files: files.map((file) => file.hash) })
+const serial = createHash('sha256').update(seed).digest('hex')
+const uuid = serial.replace(/^(.{8})(.{4})(.{4})(.{4})(.{12}).*$/, '$1-$2-$3-$4-$5')
 const sbom = {
   bomFormat: 'CycloneDX',
   specVersion: '1.5',
-  serialNumber: `urn:uuid:${createHash('sha256').update(`${pkg.name}@${pkg.version}:${files.map((f) => f.hash).join('')}`).digest('hex').replace(/^(.{8})(.{4})(.{4})(.{4})(.{12}).*$/, '$1-$2-$3-$4-$5')}`,
+  serialNumber: `urn:uuid:${uuid}`,
   version: 1,
   metadata: {
     timestamp: new Date().toISOString(),

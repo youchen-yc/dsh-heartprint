@@ -58,6 +58,8 @@
   "scripts": {
     "test": "node --test test/engine.test.mjs test/tool.test.mjs test/regression.test.mjs test/alignment.test.mjs test/security.test.mjs",
     "sbom": "node scripts/sbom.mjs",
-    "sbom:check": "node scripts/sbom.mjs --check"
+    "sbom:check": "node scripts/sbom.mjs --check",
+    "secret-scan": "node scripts/secret-scan.mjs",
+    "verify": "node --test test/engine.test.mjs test/tool.test.mjs test/regression.test.mjs test/alignment.test.mjs test/security.test.mjs && node scripts/secret-scan.mjs && node scripts/sbom.mjs --check"
   }
 }

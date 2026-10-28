@@ -26,8 +26,18 @@ jobs:
           for f in lib/*.js; do node --check "$f"; done
       - name: Tests
         run: node --test test/engine.test.mjs test/tool.test.mjs test/regression.test.mjs test/alignment.test.mjs test/security.test.mjs
+      - name: Secret scan
+        run: node scripts/secret-scan.mjs
+      - name: Dependency audit (no runtime deps expected)
+        run: npm audit --audit-level=high
       - name: SBOM consistency
         run: node scripts/sbom.mjs --check
+      - name: No hardcoded absolute paths in runtime files
+        run: |
+          if grep -nE '[A-Za-z]:\\\\|[A-Za-z]:\\' index.js client.js lib/*.js; then
+            echo 'runtime files must not contain hardcoded drive paths'
+            exit 1
+          fi
       - name: Clean-install smoke test
         run: |
           mkdir -p "$RUNNER_TEMP/clean" && cd "$RUNNER_TEMP/clean"

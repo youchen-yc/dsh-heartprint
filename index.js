@@ -611,6 +611,7 @@ export function apply(ctx, rawConfig = {}) {
       `- 人设：名字${state.policy.personaName ? `「${state.policy.personaName}」` : '未设置'} · 人格${state.policy.personaProfile ? '已设置' : '未设置'} · 性格${state.policy.characterProfile ? '已设置' : '未设置'}`,
       `- 设置页接口：${settingsApiReady ? '已就绪' : '未就绪（设置页会一直显示“正在读取…”）'}`,
       ...absentLine(state.store, state.policy, now),
+      `- 安全审计：接口拒绝 ${auditEvents.filter((event) => event.event === 'api-denied').length} 次 · 配置变更 ${auditEvents.filter((event) => event.event === 'policy-change').length} 次（宿主日志有完整记录）`,
       '- 遗忘日历：',
     ]
     for (const layer of state.policy.layers) {
@@ -1143,26 +1144,70 @@ export function apply(ctx, rawConfig = {}) {
     }
   }
 
+  // 接口权限点登记表：每个路由必须在这里显式登记「允许谁 + 对什么 + 做什么」。
+  // 新增路由不登记 → 直接 404（默认拒绝），这是 C-05「新增资源先登记权限点」的落地点；
+  // read 与 admin-write 分开登记、鉴权策略不同，对应 C-06 管理/业务接口分离。
+  const API_PERMISSIONS = Object.freeze({
+    '/dsh-heartprint/api/state': Object.freeze({
+      kind: 'read',
+      methods: Object.freeze(['GET']),
+      auth: 'local-same-origin',
+    }),
+    '/dsh-heartprint/api/policy': Object.freeze({
+      kind: 'admin-write',
+      methods: Object.freeze(['POST']),
+      auth: 'local-same-origin+json+rate-limit',
+    }),
+  })
+
+  // 安全审计事件（H-01）：授权失败、限流、配置变更都留痕，
+  // 写入宿主日志并在内存里保留最近 100 条，供 status 汇总。
+  const auditEvents = []
+  function audit(event, detail = {}) {
+    const record = { at: Date.now(), event, ...detail }
+    auditEvents.push(record)
+    if (auditEvents.length > 100) auditEvents.shift()
+    try {
+      log.warn?.(`[heartprint][audit] ${JSON.stringify(record)}`)
+    } catch {
+      // 日志不可用时不影响主流程。
+    }
+  }
+
+  function deny(res, status, payload, headers, req, reason) {
+    audit('api-denied', { path: String(req?.url || ''), status, reason })
+    return sendJson(res, status, payload, headers)
+  }
+
   async function handleSettingsApi(req, res, originOf) {
     try {
       const origin = typeof originOf === 'function' ? originOf() : ''
       const url = new URL(req.url || '/', 'http://127.0.0.1')
-      const isStateRoute = url.pathname === '/dsh-heartprint/api/state'
-      const isPolicyRoute = url.pathname === '/dsh-heartprint/api/policy'
+      const permission = API_PERMISSIONS[url.pathname]
 
-      // 默认拒绝：只认这两个显式声明的路由，其余一律 404。
-      if (!isStateRoute && !isPolicyRoute) {
-        return sendJson(res, 404, { ok: false, error: { code: 'not-found', message: '未知接口' } })
+      // 默认拒绝：只认登记表里显式声明的路由，其余一律 404。
+      if (!permission) {
+        return deny(res, 404, { ok: false, error: { code: 'not-found', message: '未知接口' } }, {}, req, 'unknown-route')
+      }
+      const isStateRoute = permission.kind === 'read'
+      const isPolicyRoute = permission.kind === 'admin-write'
+      if (!permission.methods.includes(req.method)) {
+        return sendJson(
+          res,
+          405,
+          { ok: false, error: { code: 'method-not-allowed', message: `只支持 ${permission.methods.join('/')}` } },
+          { allow: permission.methods.join(', ') },
+        )
       }
 
       // 第一道（来源）：跨站请求会带 Sec-Fetch-Site，明确写出 cross-site/same-site 的直接拒绝。
       const fetchSite = String(req.headers['sec-fetch-site'] || '')
       if (fetchSite && fetchSite !== 'same-origin' && fetchSite !== 'none') {
-        return sendJson(res, 403, { ok: false, error: { code: 'forbidden', message: '只允许本机同源请求' } })
+        return deny(res, 403, { ok: false, error: { code: 'forbidden', message: '只允许本机同源请求' } }, {}, req, 'forbidden-origin')
       }
       // 第二道（来源）：Origin 必须同源；没有 Origin 时只接受回环地址。
       if (!requestAllowed(req, origin)) {
-        return sendJson(res, 403, { ok: false, error: { code: 'forbidden', message: '只允许本机同源请求' } })
+        return deny(res, 403, { ok: false, error: { code: 'forbidden', message: '只允许本机同源请求' } }, {}, req, 'forbidden-origin')
       }
 
       if (isStateRoute) {
@@ -1191,25 +1236,28 @@ export function apply(ctx, rawConfig = {}) {
       }
       const contentType = String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase()
       if (contentType !== 'application/json') {
-        return sendJson(res, 415, { ok: false, error: { code: 'unsupported-media-type', message: '只接受 application/json' } })
+        return deny(res, 415, { ok: false, error: { code: 'unsupported-media-type', message: '只接受 application/json' } }, {}, req, 'content-type')
       }
       // 第四道（限流）：写操作 60 秒内最多 20 次。
       if (!allowWrite(Date.now())) {
-        return sendJson(res, 429, { ok: false, error: { code: 'too-many-requests', message: '操作太频繁，请稍后再试' } }, { 'retry-after': '60' })
+        return deny(res, 429, { ok: false, error: { code: 'too-many-requests', message: '操作太频繁，请稍后再试' } }, { 'retry-after': '60' }, req, 'rate-limit')
       }
       const body = await readJsonBody(req)
       if (!body || typeof body !== 'object' || Array.isArray(body)) {
-        return sendJson(res, 400, { ok: false, error: { code: 'bad-body', message: '请求体必须是 JSON 对象' } })
+        return deny(res, 400, { ok: false, error: { code: 'bad-body', message: '请求体必须是 JSON 对象' } }, {}, req, 'bad-body')
       }
       const patch = body.patch && typeof body.patch === 'object' && !Array.isArray(body.patch) ? body.patch : null
       if (!patch || !Object.keys(patch).length) {
-        return sendJson(res, 400, { ok: false, error: { code: 'bad-patch', message: 'patch 不能为空' } })
+        return deny(res, 400, { ok: false, error: { code: 'bad-patch', message: 'patch 不能为空' } }, {}, req, 'bad-patch')
       }
       const result = await withLock(() => actionPolicy({ patch }))
+      if (!result || result.ok !== false) {
+        audit('policy-change', { keys: Object.keys(patch).sort().join(',') })
+      }
       return sendJson(res, result && result.ok === false ? 400 : 200, result)
     } catch (error) {
       if (error instanceof ApiError) {
-        return sendJson(res, error.status, { ok: false, error: { code: error.code, message: error.message } })
+        return deny(res, error.status, { ok: false, error: { code: error.code, message: error.message } }, {}, req, error.code)
       }
       return sendJson(res, 500, { ok: false, error: { code: 'internal-error', message: '服务内部错误' } })
     }
