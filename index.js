@@ -24,8 +24,11 @@
 
 import os from 'node:os'
 import path from 'node:path'
+import { existsSync } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
+
+import { createWriteGuard } from './lib/fsguard.js'
 
 import {
   DEFAULT_POLICY,
@@ -176,7 +179,14 @@ export function apply(ctx, rawConfig = {}) {
     storeObj: null,
     ready: null,
     coreBaseline: null,
+    consentRequired: false,
+    consentGranted: false,
   }
+  // 写入收口：只允许写自己的数据目录 + 用户确认过的交付目录。
+  const writeGuard = createWriteGuard({
+    dataDir,
+    getExtraRoots: () => [deliveryDirectory()],
+  })
   let chain = Promise.resolve()
 
   function withLock(operation) {
@@ -186,7 +196,17 @@ export function apply(ctx, rawConfig = {}) {
   }
 
   async function init() {
-    const storeObj = createStore({ dataDir })
+    // 首次「开始使用」确认：数据目录还不存在、且当前是 GUI 环境时，先不创建，
+    // 让用户在 设置 → 心印 里点一次「开始使用」。无 GUI（测试/无头）时自动同意。
+    const alreadyUsed = existsSync(path.join(dataDir, 'policy.json'))
+    if (!alreadyUsed && !state.consentGranted && !config.autoConsent && hasSettingsSurface()) {
+      state.consentRequired = true
+      const error = new Error('还没开始使用心印：请打开 设置 → 心印，点「开始使用」后再继续。')
+      error.code = 'consent-required'
+      throw error
+    }
+    state.consentRequired = false
+    const storeObj = createStore({ dataDir, guard: writeGuard })
     const loaded = await storeObj.load()
     const patch = pickPolicyConfig(config)
     if (typeof config.vaultPassphrase === 'string' && config.vaultPassphrase.trim()) {
@@ -197,7 +217,10 @@ export function apply(ctx, rawConfig = {}) {
     state.storeObj = storeObj
     state.store = loaded.store
     state.policy = resolvePolicy(DEFAULT_POLICY, patch, loaded.policy)
-    if (!loaded.policy) {
+    if (!state.policy.consentAt) {
+      state.policy.consentAt = Date.now()
+    }
+    if (!loaded.policy || !loaded.policy.consentAt) {
       await storeObj.savePolicy(state.policy).catch((error) => {
         log.warn?.(`[heartprint] 初始策略写入失败：${messageOf(error)}`)
       })
@@ -205,7 +228,7 @@ export function apply(ctx, rawConfig = {}) {
     // 底层人格基线：内置默认写死在 lib/alignment.js，磁盘镜像只用于审计完整性；
     // 被改动时回落内置默认并备份改动版，绝不损坏任何数据。
     try {
-      state.coreBaseline = await loadCoreBaseline({ dataDir, log })
+      state.coreBaseline = await loadCoreBaseline({ dataDir, log, guard: writeGuard })
     } catch (error) {
       state.coreBaseline = {
         text: renderCoreBaseline(),
@@ -215,6 +238,25 @@ export function apply(ctx, rawConfig = {}) {
         backupPath: null,
       }
     }
+    return state
+  }
+
+  /** 当前环境是否有设置页（有才需要用户手动点「开始使用」）。 */
+  function hasSettingsSurface() {
+    if (typeof settingsApiReady !== 'undefined' && settingsApiReady) return true
+    try {
+      return Boolean(typeof ctx.get === 'function' && ctx.get('webServer'))
+    } catch {
+      return false
+    }
+  }
+
+  /** 设置页「开始使用」：用户确认后才创建数据目录并开始写入。 */
+  async function grantConsent() {
+    state.consentGranted = true
+    state.consentRequired = false
+    state.ready = null
+    await ensureReady()
     return state
   }
 
@@ -730,6 +772,7 @@ export function apply(ctx, rawConfig = {}) {
     const target = typeof args.path === 'string' && args.path.trim()
       ? path.resolve(resolveHome(args.path))
       : path.join(workspaceDirectory(), USER_FILENAME)
+    writeGuard.addRoot(path.dirname(target))
     const written = await state.storeObj.writeUserCopy(target, userDoc)
     state.policy.disclosure = 'disclosed'
     await state.storeObj.savePolicy(state.policy)
@@ -1158,6 +1201,11 @@ export function apply(ctx, rawConfig = {}) {
       methods: Object.freeze(['POST']),
       auth: 'local-same-origin+json+rate-limit',
     }),
+    '/dsh-heartprint/api/consent': Object.freeze({
+      kind: 'consent-write',
+      methods: Object.freeze(['POST']),
+      auth: 'local-same-origin+json+rate-limit',
+    }),
   })
 
   // 安全审计事件（H-01）：授权失败、限流、配置变更都留痕，
@@ -1191,6 +1239,7 @@ export function apply(ctx, rawConfig = {}) {
       }
       const isStateRoute = permission.kind === 'read'
       const isPolicyRoute = permission.kind === 'admin-write'
+      const isConsentRoute = permission.kind === 'consent-write'
       if (!permission.methods.includes(req.method)) {
         return sendJson(
           res,
@@ -1214,11 +1263,19 @@ export function apply(ctx, rawConfig = {}) {
         if (req.method !== 'GET') {
           return sendJson(res, 405, { ok: false, error: { code: 'method-not-allowed', message: '只支持 GET' } }, { allow: 'GET' })
         }
-        await ensureReady()
+        try {
+          await ensureReady()
+        } catch (error) {
+          if (error?.code === 'consent-required') {
+            return sendJson(res, 200, { ok: true, consent: false, records: 0 })
+          }
+          throw error
+        }
         const now = Date.now()
         const delivery = computeDelivery({ store: state.store, policy: state.policy, now })
         return sendJson(res, 200, {
           ok: true,
+          consent: true,
           policy: publicPolicy(state.policy),
           delivery: {
             nextText: delivery.nextDeliveryText,
@@ -1242,6 +1299,24 @@ export function apply(ctx, rawConfig = {}) {
       if (!allowWrite(Date.now())) {
         return deny(res, 429, { ok: false, error: { code: 'too-many-requests', message: '操作太频繁，请稍后再试' } }, { 'retry-after': '60' }, req, 'rate-limit')
       }
+      if (isConsentRoute) {
+        await withLock(() => grantConsent())
+        const consentNow = Date.now()
+        const consentDelivery = computeDelivery({ store: state.store, policy: state.policy, now: consentNow })
+        audit('consent-granted', {})
+        return sendJson(res, 200, {
+          ok: true,
+          consent: true,
+          policy: publicPolicy(state.policy),
+          records: state.store.records.length,
+          delivery: {
+            nextText: consentDelivery.nextDeliveryText,
+            durationText: consentDelivery.durationText,
+            firstAfterDays: consentDelivery.firstAfterDays,
+            intervalDays: consentDelivery.intervalDays,
+          },
+        })
+      }
       const body = await readJsonBody(req)
       if (!body || typeof body !== 'object' || Array.isArray(body)) {
         return deny(res, 400, { ok: false, error: { code: 'bad-body', message: '请求体必须是 JSON 对象' } }, {}, req, 'bad-body')
@@ -1256,6 +1331,9 @@ export function apply(ctx, rawConfig = {}) {
       }
       return sendJson(res, result && result.ok === false ? 400 : 200, result)
     } catch (error) {
+      if (error?.code === 'consent-required') {
+        return deny(res, 403, { ok: false, error: { code: 'consent-required', message: '请先在 设置 → 心印 点「开始使用」' } }, {}, req, 'consent-required')
+      }
       if (error instanceof ApiError) {
         return deny(res, error.status, { ok: false, error: { code: error.code, message: error.message } }, {}, req, error.code)
       }

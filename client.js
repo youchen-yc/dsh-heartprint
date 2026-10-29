@@ -130,8 +130,29 @@ window.__ModuleLoader__.load({
         setForm((current) => (current ? { ...current, [key]: value } : current))
       }
 
-      const save = () => {
-        if (!form || busy) return
+      const startUse = () => {
+        if (busy) return
+        setBusy(true)
+        setMessage(null)
+        fetch('/dsh-heartprint/api/consent', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: '{}',
+        })
+          .then((res) => res.json())
+          .then((payload) => {
+            if (payload && payload.ok === false) {
+              setMessage({ kind: 'bad', text: readError(payload) })
+              return
+            }
+            applyState(payload)
+            setMessage({ kind: 'ok', text: '已开始使用' })
+          })
+          .catch(() => setMessage({ kind: 'bad', text: '开始失败：接口没响应' }))
+          .finally(() => setBusy(false))
+      }
+
+      const save = () => {        if (!form || busy) return
         setBusy(true)
         setMessage(null)
         fetch('/dsh-heartprint/api/policy', {
@@ -163,6 +184,21 @@ window.__ModuleLoader__.load({
 
       if (!form) {
         return h('div', { style: S.wrap }, h('p', { style: S.hint }, '正在读取心印配置…'))
+      }
+
+      if (loaded && loaded.consent === false) {
+        return h('div', { style: S.wrap },
+          h('div', { style: S.card },
+            h('h3', { style: S.title }, '心印 · 开始使用'),
+            h('p', { style: S.hint }, '心印会把记忆保存在本机自己的数据目录里，不联网、不上传。你确认之后才会创建目录并开始记录。'),
+            h('button', {
+              style: busy ? { ...S.button, ...S.buttonDisabled } : S.button,
+              onClick: startUse,
+              disabled: busy,
+            }, busy ? '处理中…' : '开始使用'),
+            message ? h('span', { style: message.kind === 'ok' ? S.ok : S.bad }, message.text) : null,
+          ),
+        )
       }
 
       const delivery = (loaded && loaded.delivery) || {}

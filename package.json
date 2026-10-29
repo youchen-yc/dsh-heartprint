@@ -1,6 +1,6 @@
 {
   "name": "dsh-heartprint",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "心印：记忆类插件。可以设置性格、人格，给它取名字；有情绪，介意勿下载；有淡忘功能，只淡忘琐碎无用的信息，重要的事情会经过分析保留；会记得你跟它之间最重要的事情；有特殊事件功能，特殊意义的事情会被记住。",
   "type": "module",
   "exports": {
@@ -52,11 +52,11 @@
     "access": "public"
   },
   "scripts": {
-    "test": "node --test test/engine.test.mjs test/tool.test.mjs test/regression.test.mjs test/alignment.test.mjs test/security.test.mjs test/release.test.mjs",
+    "test": "node --test test/engine.test.mjs test/tool.test.mjs test/regression.test.mjs test/alignment.test.mjs test/security.test.mjs test/release.test.mjs test/fsguard.test.mjs",
     "sbom": "node scripts/sbom.mjs",
     "sbom:check": "node scripts/sbom.mjs --check",
     "secret-scan": "node scripts/secret-scan.mjs",
-    "verify": "node --test test/engine.test.mjs test/tool.test.mjs test/regression.test.mjs test/alignment.test.mjs test/security.test.mjs test/release.test.mjs && node scripts/secret-scan.mjs && node scripts/sbom.mjs --check && node scripts/release-check.mjs",
+    "verify": "node --test test/engine.test.mjs test/tool.test.mjs test/regression.test.mjs test/alignment.test.mjs test/security.test.mjs test/release.test.mjs test/fsguard.test.mjs && node scripts/secret-scan.mjs && node scripts/sbom.mjs --check && node scripts/release-check.mjs",
     "release-check": "node scripts/release-check.mjs",
     "prepublishOnly": "node scripts/release-check.mjs"
   }

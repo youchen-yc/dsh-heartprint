@@ -37,7 +37,7 @@ function makeResponse() {
 }
 
 /** 装插件并把设置页 API 的 handler 抓出来。 */
-async function boot() {
+async function boot({ consent = true } = {}) {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'heartprint-security-'))
   const handlers = []
   const webServer = {
@@ -75,6 +75,14 @@ async function boot() {
     const res = makeResponse()
     await handler(req, res)
     return res
+  }
+  if (consent) {
+    await invoke({
+      method: 'POST',
+      url: '/dsh-heartprint/api/consent',
+      headers: { origin: ORIGIN, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' },
+      body: '{}',
+    })
   }
   return { dir, invoke }
 }
@@ -201,6 +209,39 @@ test('交付目标路径拒绝 NUL 字符', async () => {
   try {
     const store = createStore({ dataDir: dir })
     await assert.rejects(() => store.writeUserCopy('bad\u0000name.md', 'x'))
+  } finally {
+    await cleanup(dir)
+  }
+})
+
+test('首次使用必须先点「开始使用」：未同意前状态只读、写接口被拒，同意后正常', async () => {
+  const { dir, invoke } = await boot({ consent: false })
+  try {
+    const before = await invoke({ headers: sameOriginHeaders() })
+    assert.equal(before.statusCode, 200)
+    assert.equal(JSON.parse(before.body).consent, false)
+
+    const denied = await invoke({
+      method: 'POST',
+      url: '/dsh-heartprint/api/policy',
+      headers: sameOriginHeaders({ 'content-type': 'application/json' }),
+      body: JSON.stringify({ patch: { personaName: '小鲸' } }),
+    })
+    assert.equal(denied.statusCode, 403)
+    assert.equal(JSON.parse(denied.body).error.code, 'consent-required')
+
+    const granted = await invoke({
+      method: 'POST',
+      url: '/dsh-heartprint/api/consent',
+      headers: sameOriginHeaders({ 'content-type': 'application/json' }),
+      body: '{}',
+    })
+    assert.equal(granted.statusCode, 200)
+    assert.equal(JSON.parse(granted.body).consent, true)
+
+    const after = await invoke({ headers: sameOriginHeaders() })
+    assert.equal(JSON.parse(after.body).consent, true)
+    assert.equal(JSON.parse(after.body).policy.personaName, '')
   } finally {
     await cleanup(dir)
   }

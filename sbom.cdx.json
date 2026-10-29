@@ -1,22 +1,22 @@
 {
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
-  "serialNumber": "urn:uuid:a493cb25-85eb-7e3b-a66f-2852d75edd0a",
+  "serialNumber": "urn:uuid:98474614-69bf-6702-14dc-cc01f83211ee",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-10-29T06:18:05.711Z",
+    "timestamp": "2026-10-29T14:18:23.139Z",
     "tools": [
       {
         "vendor": "heartprint",
         "name": "scripts/sbom.mjs",
-        "version": "1.1.1"
+        "version": "1.1.2"
       }
     ],
     "component": {
       "type": "application",
-      "bom-ref": "pkg:npm/dsh-heartprint@1.1.1",
+      "bom-ref": "pkg:npm/dsh-heartprint@1.1.2",
       "name": "dsh-heartprint",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "licenses": [
         {
           "license": {
@@ -24,7 +24,7 @@
           }
         }
       ],
-      "purl": "pkg:npm/dsh-heartprint@1.1.1",
+      "purl": "pkg:npm/dsh-heartprint@1.1.2",
       "properties": [
         {
           "name": "dsh.bundle.patch",
@@ -50,7 +50,7 @@
       "type": "file",
       "bom-ref": "file:LICENSE",
       "name": "LICENSE",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "hashes": [
         {
           "alg": "SHA-256",
@@ -68,7 +68,7 @@
       "type": "file",
       "bom-ref": "file:README.md",
       "name": "README.md",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "hashes": [
         {
           "alg": "SHA-256",
@@ -86,17 +86,17 @@
       "type": "file",
       "bom-ref": "file:client.js",
       "name": "client.js",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "030f90c5d3a6d8aae73b5affcb571adc0539adad8be91c98f958b152cb22289e"
+          "content": "af1b093a76d43ac93e80c1bd2e7fe3500d8a99e0b3ee33b1bb7df34918978479"
         }
       ],
       "properties": [
         {
           "name": "size",
-          "value": "10112"
+          "value": "11583"
         }
       ]
     },
@@ -104,7 +104,7 @@
       "type": "file",
       "bom-ref": "file:cordis.patch.yml",
       "name": "cordis.patch.yml",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "hashes": [
         {
           "alg": "SHA-256",
@@ -122,7 +122,7 @@
       "type": "file",
       "bom-ref": "file:icon.svg",
       "name": "icon.svg",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "hashes": [
         {
           "alg": "SHA-256",
@@ -140,17 +140,17 @@
       "type": "file",
       "bom-ref": "file:index.js",
       "name": "index.js",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "55b6c6cc0043914c2d40f180e1b966153bd598934bf4976e399092c8b995f20d"
+          "content": "e22cbfc78a8979e466a14a161a089e58e2e8cc08606347413b3f9e18380aa979"
         }
       ],
       "properties": [
         {
           "name": "size",
-          "value": "57045"
+          "value": "60340"
         }
       ]
     },
@@ -158,17 +158,17 @@
       "type": "file",
       "bom-ref": "file:lib/alignment.js",
       "name": "lib/alignment.js",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "bfd8efc529ca809aa7fc3f350e06f88d419d83c0b6d0cc50931907e09c9fd585"
+          "content": "a27881a24104b7c633f33652286b1b44f2028b20cf05e74b597a55c7eb98a4d9"
         }
       ],
       "properties": [
         {
           "name": "size",
-          "value": "8523"
+          "value": "8595"
         }
       ]
     },
@@ -176,7 +176,7 @@
       "type": "file",
       "bom-ref": "file:lib/decay.js",
       "name": "lib/decay.js",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "hashes": [
         {
           "alg": "SHA-256",
@@ -194,7 +194,7 @@
       "type": "file",
       "bom-ref": "file:lib/docs.js",
       "name": "lib/docs.js",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "hashes": [
         {
           "alg": "SHA-256",
@@ -212,7 +212,7 @@
       "type": "file",
       "bom-ref": "file:lib/engine.js",
       "name": "lib/engine.js",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "hashes": [
         {
           "alg": "SHA-256",
@@ -228,19 +228,37 @@
     },
     {
       "type": "file",
-      "bom-ref": "file:lib/policy.js",
-      "name": "lib/policy.js",
-      "version": "1.1.1",
+      "bom-ref": "file:lib/fsguard.js",
+      "name": "lib/fsguard.js",
+      "version": "1.1.2",
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "a59f3bb98f599a36b9eb86a374864539115f93f1a0842a231269c668645e3f57"
+          "content": "cd60622202263f47daa083529c48900b9fee462410f033d77abe9734548d5532"
         }
       ],
       "properties": [
         {
           "name": "size",
-          "value": "17400"
+          "value": "2060"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "file:lib/policy.js",
+      "name": "lib/policy.js",
+      "version": "1.1.2",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "3bc6c7db929e6c1ee38bee2e6d3494b921bde816197b92d4ef0d469715fc8123"
+        }
+      ],
+      "properties": [
+        {
+          "name": "size",
+          "value": "17613"
         }
       ]
     },
@@ -248,17 +266,17 @@
       "type": "file",
       "bom-ref": "file:lib/store.js",
       "name": "lib/store.js",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "ccad9f03a5a520ed4d178069d786497ee0adc8cf3fd2f7b2b7de89cf270e4639"
+          "content": "a276a42e9d2d808b6c3131c8585234b6ed923ced0925324eafcf0c125a4a30fc"
         }
       ],
       "properties": [
         {
           "name": "size",
-          "value": "8287"
+          "value": "8735"
         }
       ]
     },
@@ -266,7 +284,7 @@
       "type": "file",
       "bom-ref": "file:lib/text.js",
       "name": "lib/text.js",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "hashes": [
         {
           "alg": "SHA-256",
@@ -284,17 +302,17 @@
       "type": "file",
       "bom-ref": "file:lib/vault.js",
       "name": "lib/vault.js",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "66dd479cf2870d6c60549a32a85ea49a5ca078e91df86c43bbcdee880005b63f"
+          "content": "d06f4ac83fc0740e6436c14c40b8f62c964bd2b3b4e49a2aea6a1be5db4c6ff8"
         }
       ],
       "properties": [
         {
           "name": "size",
-          "value": "8379"
+          "value": "8781"
         }
       ]
     },
@@ -302,7 +320,7 @@
       "type": "file",
       "bom-ref": "file:locale/en.json",
       "name": "locale/en.json",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "hashes": [
         {
           "alg": "SHA-256",
@@ -320,7 +338,7 @@
       "type": "file",
       "bom-ref": "file:locale/zh.json",
       "name": "locale/zh.json",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "hashes": [
         {
           "alg": "SHA-256",
@@ -337,7 +355,7 @@
   ],
   "dependencies": [
     {
-      "ref": "pkg:npm/dsh-heartprint@1.1.1",
+      "ref": "pkg:npm/dsh-heartprint@1.1.2",
       "dependsOn": [
         "file:LICENSE",
         "file:README.md",
@@ -349,6 +367,7 @@
         "file:lib/decay.js",
         "file:lib/docs.js",
         "file:lib/engine.js",
+        "file:lib/fsguard.js",
         "file:lib/policy.js",
         "file:lib/store.js",
         "file:lib/text.js",
