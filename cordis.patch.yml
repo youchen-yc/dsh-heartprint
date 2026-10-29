@@ -1,17 +1,12 @@
-# dsh-heartprint bundle patch
+# dsh-heartprint 默认配置
 #
-# The row below is the default composition. Every field can be overridden from
-# the profile's own patch layer; runtime policy edits made through
-# `heartprint_admin action=policy` are stored in the data directory and take
-# precedence over these values.
+# 所有字段都可以在 profile 的 patch 层覆盖；运行时用
+# heartprint_admin action=policy 改的值存在数据目录，优先级更高。
 - insert:
     - id: heartprint
       name: 'dsh-heartprint'
       config:
-        # Empty means: <DSH_HOME>/heartprint
+        # 留空 = <DSH_HOME>/heartprint
         dataDir: ''
-        # confidential | disclosed — whether the memory document has been
-        # handed to the user yet (see the plugin README, section 交付).
         disclosure: confidential
-        # How often the third, encrypted-and-hidden document is refreshed.
         syncIntervalDays: 30
