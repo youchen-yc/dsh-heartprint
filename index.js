@@ -29,6 +29,7 @@ import { stat } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 
 import { createWriteGuard } from './lib/fsguard.js'
+import { activePartitions, inferPartitions, partitionSummary, primingBoost, updatePrimingIndex } from './lib/partitions.js'
 
 import {
   DEFAULT_POLICY,
@@ -165,6 +166,8 @@ function publicRecord(record) {
     state: record.state || 'active',
     content: record.content,
     feeling: record.feeling,
+    partitions: Array.isArray(record.partitions) ? [...record.partitions] : [],
+    revision: Number(record.revision) || 0,
   }
 }
 
@@ -538,6 +541,9 @@ export function apply(ctx, rawConfig = {}) {
       recallCount: 0,
       source: 'manual',
     }
+    // 分区归属：由类型/标签推断；知觉启动索引记下人名/标签/标题词。
+    record.partitions = inferPartitions(record)
+    state.store.meta.priming = updatePrimingIndex(state.store.meta.priming, record, now)
     state.store.records.push(record)
     const run = await runMaintenanceInternal({ now, reason: 'remember' })
     const layerNote = record.special || ['personality', 'emotion', 'turning_point', 'pain'].includes(type)
@@ -563,6 +569,43 @@ export function apply(ctx, rawConfig = {}) {
     }
   }
 
+  async function actionReconsolidate(args) {
+    await ensureReady()
+    const now = Date.now()
+    const id = cleanText(args.id, 120)
+    if (!id) return fail('missing-id', '需要 id：要更新的记忆 id')
+    const record = state.store.records.find((item) => item.id === id)
+    if (!record) return fail('not-found', `没找到 id 为 ${id} 的记忆`)
+    const before = { id: record.id, title: record.title, content: record.content, feeling: record.feeling, importance: record.importance }
+    let changed = false
+    if (args.title !== undefined) { record.title = cleanText(args.title, 120) || record.title; changed = true }
+    if (args.content !== undefined) { record.content = clip(normalizeText(args.content), MAX_CONTENT_CHARS); changed = true }
+    if (args.feeling !== undefined) { record.feeling = clip(normalizeText(args.feeling), 2000); changed = true }
+    if (args.importance !== undefined) { record.importance = clampInt(args.importance, 0, 100, record.importance); changed = true }
+    if (!changed) return fail('nothing-to-update', '没有要更新的字段（title / content / feeling / importance）')
+    record.partitions = inferPartitions(record)
+    record.revision = (Number(record.revision) || 0) + 1
+    record.reconsolidatedAt = now
+    record.updatedAt = now
+    try {
+      await state.storeObj.appendArchive([{ kind: 'reconsolidation', id: record.id, at: now, before }])
+    } catch (error) {
+      return fail('archive-failed', `旧版本归档失败，记忆未改动：${messageOf(error)}`)
+    }
+    state.store.meta.priming = updatePrimingIndex(state.store.meta.priming, record, now)
+    const run = await runMaintenanceInternal({ now, reason: 'reconsolidate' })
+    return {
+      ok: true,
+      action: 'reconsolidate',
+      summary: [
+        `已更新「${record.title}」（第 ${record.revision} 版，旧版本已存进加密档案）。`,
+        `本次维护：${describeChangeSummary(run.changes)}`,
+      ].join('\n'),
+      record: publicRecord(record),
+      maintenance: { changes: run.changes, vaultWritten: run.vaultWritten, warnings: run.warnings },
+    }
+  }
+
   async function actionRecall(args) {
     await ensureReady()
     const now = Date.now()
@@ -577,6 +620,9 @@ export function apply(ctx, rawConfig = {}) {
       since: since ?? undefined,
       until: until ?? undefined,
       includeForgotten: args.includeForgotten === true,
+      // 功能层组网 + 知觉启动：激活分区的记忆优先，熟悉线索再给启动效应。
+      partitions: activePartitions(args.query || '').active,
+      primingBoost: primingBoost(state.store.meta.priming, args.query || ''),
     })
     for (const record of results) {
       if (record.state !== 'forgotten') {
@@ -905,6 +951,8 @@ export function apply(ctx, rawConfig = {}) {
         return actionRemember(args)
       case 'recall':
         return actionRecall(args)
+      case 'reconsolidate':
+        return actionReconsolidate(args)
       case 'profile':
         return actionProfile()
       case 'status':
@@ -944,9 +992,10 @@ export function apply(ctx, rawConfig = {}) {
       properties: {
         action: {
           type: 'string',
-          enum: ['remember', 'recall', 'profile', 'status'],
+          enum: ['remember', 'recall', 'reconsolidate', 'profile', 'status'],
           description: '要执行的动作',
         },
+        id: { type: 'string', description: 'reconsolidate：要更新的记忆 id' },
         title: { type: 'string', description: 'remember：一句话标题' },
         content: { type: 'string', description: 'remember：发生了什么、当时的细节（会被压缩）' },
         feeling: { type: 'string', description: 'remember：当时的感受，尽量写具体' },
