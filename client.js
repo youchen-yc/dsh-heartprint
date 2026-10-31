@@ -104,6 +104,7 @@ window.__ModuleLoader__.load({
       const [restoreForm, setRestoreForm] = useState({ source: 'document', path: '', id: '' })
       const [restoreMessage, setRestoreMessage] = useState(null)
       const [restoring, setRestoring] = useState(false)
+      const [autoState, setAutoState] = useState(null)
       const [autoOffer, setAutoOffer] = useState(false)
 
       const applyState = useCallback((payload) => {
@@ -218,6 +219,29 @@ window.__ModuleLoader__.load({
         setRestoreForm((current) => ({ ...current, [key]: value }))
       }
 
+      const autoSearch = () => {
+        if (restoring) return
+        setRestoring(true)
+        setAutoState({ kind: 'loading', text: '正在搜寻…', candidates: [] })
+        fetch('/dsh-heartprint/api/restore', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ source: 'auto' }) })
+          .then((res) => res.json())
+          .then((payload) => {
+            const candidates = (payload && payload.candidates) || []
+            setAutoState({ kind: candidates.length ? 'ok' : 'bad', text: candidates.length ? payload.message : '没有找到可自动读取的记录', candidates })
+          })
+          .catch(() => setAutoState({ kind: 'bad', text: '没有找到可自动读取的记录', candidates: [] }))
+          .finally(() => setRestoring(false))
+      }
+      const restoreCandidate = (candidate) => {
+        if (restoring) return
+        setRestoring(true)
+        fetch('/dsh-heartprint/api/restore', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ source: 'backup', path: candidate.path, confirm: true }) })
+          .then((res) => res.json())
+          .then((payload) => setAutoState({ kind: payload.ok ? 'ok' : 'bad', text: payload.ok ? (payload.summary || '读档完成') : readError(payload), candidates: [] }))
+          .catch(() => setAutoState({ kind: 'bad', text: '读档失败', candidates: [] }))
+          .finally(() => setRestoring(false))
+      }
+
       if (!form) {
         return h('div', { style: S.wrap }, h('p', { style: S.hint }, '正在读取心印配置…'))
       }
@@ -285,7 +309,16 @@ window.__ModuleLoader__.load({
           h('div', null,
             h('button', { style: restoring ? { ...S.button, ...S.buttonDisabled } : S.button, onClick: restoreNow, disabled: restoring },
               restoring ? '读档中…' : '开始读档'),
+            h('button', { style: { ...S.button, marginLeft: '8px' }, onClick: autoSearch, disabled: restoring }, '尝试自动搜寻可读档的记录'),
             restoreMessage ? h('span', { style: restoreMessage.kind === 'ok' ? S.ok : S.bad }, ` ${restoreMessage.text}`) : null),
+          autoState ? h('div', null,
+            h('p', { style: autoState.kind === 'ok' ? S.ok : S.bad }, autoState.text),
+            ...((autoState.candidates) || []).map((candidate) => h('button', {
+              key: candidate.path,
+              style: { ...S.button, marginRight: '6px', marginTop: '4px' },
+              disabled: restoring,
+              onClick: () => restoreCandidate(candidate),
+            }, `可用记录（${candidate.count} 条 · ${new Date(candidate.at).toLocaleString()}）`))) : null,
         ),
         (() => {
           const used = Number((loaded && loaded.records) || 0)

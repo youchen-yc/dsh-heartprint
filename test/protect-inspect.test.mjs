@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { resolvePolicy } from '../lib/policy.js'
-import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readdir, rm, stat, utimes, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
@@ -456,24 +456,34 @@ test('导出不得放宽写范围：复用 guard 时 roots 数量不变', async 
   })
 })
 
-test('自动搜寻：有本机备份时直接读档成功', async () => {
+test('自动搜寻：没有可读档记录时返回空列表、不报错', async () => {
   await withTempDir(async (dir) => {
     const { exec } = await initFull(dir)
-    const backup = path.join(dir, 'memories.json.bak')
-    await writeFile(backup, JSON.stringify({ records: [{ id: 'mem-auto-1', title: '来自备份', type: 'event' }, { id: 'mem-auto-2', title: '第二条', type: 'event' }] }), 'utf8')
-    const result = await exec('heartprint_admin', { action: 'restore', source: 'auto', confirm: true })
+    const result = await exec('heartprint_admin', { action: 'restore', source: 'auto' })
     assert.equal(result.ok, true)
-    assert.ok(result.added + result.updated >= 2)
-    const store = JSON.parse(await readFile(path.join(dir, 'memories.json'), 'utf8'))
-    assert.ok(store.records.some((record) => record.id === 'mem-auto-1'))
+    assert.deepEqual(result.candidates, [])
+    assert.match(result.message, /没有找到可自动读取的记录/)
   })
 })
 
-test('自动搜寻：没有备份也没有加密档时返回 not-found', async () => {
+test('自动搜寻：候选按时间倒序、最多 5 条，且不含目录外文件', async () => {
   await withTempDir(async (dir) => {
     const { exec } = await initFull(dir)
-    const result = await exec('heartprint_admin', { action: 'restore', source: 'auto', confirm: true })
-    assert.equal(result.ok, false)
-    assert.equal(result.error.code, 'not-found')
+    const base = path.dirname(dir)
+    const now = Date.now()
+    for (let i = 0; i < 7; i += 1) {
+      const file = path.join(dir, `memories.json.pre-restore-${i}.json`)
+      await writeFile(file, JSON.stringify({ records: [{ id: `r${i}`, title: `t${i}` }] }), 'utf8')
+      await utimes(file, new Date(now - i * 100000), new Date(now - i * 100000))
+    }
+    const outside = path.join(base, 'outside-auto.json')
+    await writeFile(outside, JSON.stringify({ records: [{ id: 'outside' }] }), 'utf8')
+    await utimes(outside, new Date(now + 100000), new Date(now + 100000))
+    const result = await exec('heartprint_admin', { action: 'restore', source: 'auto' })
+    assert.equal(result.ok, true)
+    assert.equal(result.candidates.length, 5)
+    for (const candidate of result.candidates) assert.ok(candidate.path.startsWith(dir), candidate.path)
+    for (let i = 1; i < result.candidates.length; i += 1) assert.ok(result.candidates[i - 1].at >= result.candidates[i].at)
+    assert.ok(!result.candidates.some((candidate) => candidate.path.includes('outside-auto')))
   })
 })

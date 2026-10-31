@@ -974,45 +974,37 @@ export function apply(ctx, rawConfig = {}) {
 
     let incoming = []
     if (source === 'auto') {
-      // 自动搜寻：先找本机备份文件（含 .bak / 读档前快照 / 维护快照），再退到加密档案。
+      // 只列候选，不读档：只在数据目录与已交付目录里找，不递归、不联网。
+      const dirs = [dataDir, deliveryDirectory()].filter((value) => typeof value === 'string' && value)
+      const seen = new Set()
       const candidates = []
-      for (const name of ['memories.json.bak']) {
-        candidates.push(path.join(dataDir, name))
-      }
-      try {
-        for (const name of readdirSync(dataDir)) {
-          if (name.startsWith('memories.json.pre-restore-') || name.startsWith('memories.json.corrupt-')) candidates.push(path.join(dataDir, name))
-        }
-      } catch {}
-      try {
-        for (const name of readdirSync(path.join(dataDir, '.snapshots'))) {
-          if (/^memories-.*\.json$/.test(name)) candidates.push(path.join(dataDir, '.snapshots', name))
-        }
-      } catch {}
-      const withTime = []
-      for (const file of candidates) {
+      const addCandidate = async (file) => {
+        if (seen.has(file)) return
+        seen.add(file)
         try {
           const info = await stat(file)
-          withTime.push({ file, at: info.mtimeMs })
+          if (!info.isFile()) return
+          const parsed = JSON.parse(await readFile(file, 'utf8'))
+          if (!Array.isArray(parsed.records) || !parsed.records.length) return
+          candidates.push({ path: file, count: parsed.records.length, at: info.mtimeMs })
         } catch {}
       }
-      withTime.sort((a, b) => b.at - a.at)
-      for (const item of withTime) {
+      for (const dir of dirs) {
         try {
-          const parsed = JSON.parse(await readFile(item.file, 'utf8'))
-          if (Array.isArray(parsed.records) && parsed.records.length) { incoming = parsed.records; warnings.push('自动搜寻：已找到可用记录'); break }
+          for (const name of readdirSync(dir)) {
+            const ok = name === 'memories.json.bak' || name.startsWith('memories.json.pre-restore-') || name.startsWith('memories.json.corrupt-')
+            if (ok) await addCandidate(path.join(dir, name))
+          }
+        } catch {}
+        try {
+          for (const name of readdirSync(path.join(dir, '.snapshots'))) {
+            if (/^memories-.*\.json$/.test(name)) await addCandidate(path.join(dir, '.snapshots', name))
+          }
         } catch {}
       }
-      if (!incoming.length) {
-        const journal = await state.storeObj.readArchiveJournal()
-        const seen = new Set()
-        for (const entry of [...journal].reverse()) {
-          const snap = entry && (entry.record || entry.before)
-          if (snap && snap.id && !seen.has(snap.id)) { seen.add(snap.id); incoming.push(snap) }
-        }
-        if (incoming.length) warnings.push('自动搜寻：已找到 ' + incoming.length + ' 条可用记录')
-      }
-      if (!incoming.length) return fail('not-found', '没有找到可自动读取的记录')
+      candidates.sort((a, b) => b.at - a.at)
+      const top = candidates.slice(0, 5)
+      return { ok: true, action: 'restore', source: 'auto', candidates: top, message: top.length ? `找到 ${top.length} 个可读档的记录` : '没有找到可自动读取的记录' }
     } else if (source === 'archive') {
       const id = cleanText(args.id, 120)
       if (!id) return fail('missing-id', '读档需要 id：要恢复哪条记忆（可用 recall 结果里的 id）')
