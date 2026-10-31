@@ -1391,6 +1391,11 @@ export function apply(ctx, rawConfig = {}) {
   // 新增路由不登记 → 直接 404（默认拒绝），这是 C-05「新增资源先登记权限点」的落地点；
   // read 与 admin-write 分开登记、鉴权策略不同，对应 C-06 管理/业务接口分离。
   const API_PERMISSIONS = Object.freeze({
+    '/dsh-heartprint/api/restore': Object.freeze({
+      kind: 'admin-write',
+      methods: Object.freeze(['POST']),
+      auth: 'local-same-origin+json+rate-limit',
+    }),
     '/dsh-heartprint/api/state': Object.freeze({
       kind: 'read',
       methods: Object.freeze(['GET']),
