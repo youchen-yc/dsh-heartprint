@@ -101,6 +101,9 @@ window.__ModuleLoader__.load({
       const [form, setForm] = useState(null)
       const [message, setMessage] = useState(null)
       const [busy, setBusy] = useState(false)
+      const [restoreForm, setRestoreForm] = useState({ source: 'document', path: '', id: '' })
+      const [restoreMessage, setRestoreMessage] = useState(null)
+      const [restoring, setRestoring] = useState(false)
 
       const applyState = useCallback((payload) => {
         if (!payload || payload.ok === false) return
@@ -182,6 +185,39 @@ window.__ModuleLoader__.load({
           .finally(() => setBusy(false))
       }
 
+      const restoreNow = () => {
+        if (restoring) return
+        setRestoring(true)
+        setRestoreMessage(null)
+        const body = restoreForm.source === 'archive'
+          ? { source: 'archive', id: restoreForm.id }
+          : { source: restoreForm.source, path: restoreForm.path }
+        fetch('/dsh-heartprint/api/restore', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(body),
+        })
+          .then((res) => res.json())
+          .then((payload) => {
+            if (payload && payload.ok) {
+              setRestoreMessage({ kind: 'ok', text: payload.summary || `读档完成：新增 ${payload.added} 条 / 更新 ${payload.updated} 条` })
+              fetch('/dsh-heartprint/api/state', { headers: { accept: 'application/json' } })
+                .then((res) => res.json())
+                .then((state) => applyState(state))
+                .catch(() => {})
+            } else {
+              setRestoreMessage({ kind: 'bad', text: readError(payload) })
+            }
+          })
+          .catch(() => setRestoreMessage({ kind: 'bad', text: '读档失败：接口没响应' }))
+          .finally(() => setRestoring(false))
+      }
+
+      const updateRestore = (key) => (event) => {
+        const value = event && event.target ? event.target.value : event
+        setRestoreForm((current) => ({ ...current, [key]: value }))
+      }
+
       if (!form) {
         return h('div', { style: S.wrap }, h('p', { style: S.hint }, '正在读取心印配置…'))
       }
@@ -241,6 +277,24 @@ window.__ModuleLoader__.load({
                 h('span', null, String((loaded && loaded.records) || 0)),
               ),
             ),
+        h('div', { style: S.card },
+          h('h3', { style: S.title }, '记忆读档'),
+          h('p', { style: S.hint }, '从交付文档、备份文件或加密档案把记忆读回来；读档前会自动留一份备份。'),
+          h(Field, { label: '读档来源' },
+            h('select', { style: S.input, value: restoreForm.source, onChange: updateRestore('source') },
+              h('option', { value: 'document' }, '交付文档（.md）'),
+              h('option', { value: 'backup' }, '备份文件（.json）'),
+              h('option', { value: 'archive' }, '加密档案（按记忆 id）'))),
+          restoreForm.source === 'archive'
+            ? h(Field, { label: '记忆 id', hint: '用 recall 结果里的 id' },
+                h('input', { style: S.input, value: restoreForm.id, onChange: updateRestore('id'), placeholder: 'mem-…' }))
+            : h(Field, { label: '文件路径', hint: '必须在数据目录或交付目录内' },
+                h('input', { style: S.input, value: restoreForm.path, onChange: updateRestore('path'), placeholder: 'D:\\心印交付\\…md' })),
+          h('div', null,
+            h('button', { style: restoring ? { ...S.button, ...S.buttonDisabled } : S.button, onClick: restoreNow, disabled: restoring },
+              restoring ? '读档中…' : '开始读档'),
+            restoreMessage ? h('span', { style: restoreMessage.kind === 'ok' ? S.ok : S.bad }, ` ${restoreMessage.text}`) : null),
+        ),
         h('div', { style: S.card },
           h('h3', { style: S.title }, '遗忘日历（查看）'),
           h('p', { style: S.hint }, `重要阈值 ${policy.importantThreshold ?? 70} · 次重要阈值 ${policy.secondaryThreshold ?? 40} · 自动维护 ${policy.syncIntervalDays ?? 30} 天/次`),

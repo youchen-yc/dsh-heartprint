@@ -891,7 +891,7 @@ export function apply(ctx, rawConfig = {}) {
     }
   }
 
-  async function actionRestore(args) {
+  async function restoreFromSource(args) {
     await ensureReady()
     const now = Date.now()
     const source = args.source === 'archive' ? 'archive' : args.source === 'document' ? 'document' : 'backup'
@@ -1030,6 +1030,10 @@ export function apply(ctx, rawConfig = {}) {
       warnings,
       maintenance: { changes: run.changes, vaultWritten: run.vaultWritten, warnings: run.warnings },
     }
+  }
+
+  async function actionRestore(args) {
+    return restoreFromSource(args)
   }
 
   async function actionVault(args) {
@@ -1436,6 +1440,7 @@ export function apply(ctx, rawConfig = {}) {
       const isStateRoute = permission.kind === 'read'
       const isPolicyRoute = permission.kind === 'admin-write'
       const isConsentRoute = permission.kind === 'consent-write'
+      const isRestoreRoute = url.pathname === '/dsh-heartprint/api/restore'
       if (!permission.methods.includes(req.method)) {
         return sendJson(
           res,
@@ -1516,6 +1521,18 @@ export function apply(ctx, rawConfig = {}) {
       const body = await readJsonBody(req)
       if (!body || typeof body !== 'object' || Array.isArray(body)) {
         return deny(res, 400, { ok: false, error: { code: 'bad-body', message: '请求体必须是 JSON 对象' } }, {}, req, 'bad-body')
+      }
+      if (isRestoreRoute) {
+        const source = body.source === 'archive' || body.source === 'document' || body.source === 'backup' ? body.source : ''
+        if (!source) {
+          return deny(res, 400, { ok: false, error: { code: 'bad-source', message: 'source 必须是 backup / archive / document' } }, {}, req, 'bad-source')
+        }
+        const args = source === 'archive'
+          ? { source, id: String(body.id || '') }
+          : { source, path: String(body.path || '') }
+        const result = await withLock(() => restoreFromSource(args))
+        if (result && result.ok !== false) audit('restore', { source, added: result.added || 0, updated: result.updated || 0 })
+        return sendJson(res, result && result.ok === false ? 400 : 200, result)
       }
       const patch = body.patch && typeof body.patch === 'object' && !Array.isArray(body.patch) ? body.patch : null
       if (!patch || !Object.keys(patch).length) {
