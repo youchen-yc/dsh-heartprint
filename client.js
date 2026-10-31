@@ -189,8 +189,7 @@ window.__ModuleLoader__.load({
         if (restoring) return
         setRestoring(true)
         setRestoreMessage(null)
-        const body = restoreForm.source === 'archive'
-          { source: 'document', path: restoreForm.path, confirm: true }
+        const body = { source: 'document', path: restoreForm.path, confirm: true }
         fetch('/dsh-heartprint/api/restore', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
