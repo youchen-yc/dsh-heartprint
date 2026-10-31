@@ -455,3 +455,25 @@ test('导出不得放宽写范围：复用 guard 时 roots 数量不变', async 
     assert.equal(guard.roots().length, before, '导出不得放宽写范围')
   })
 })
+
+test('自动搜寻：有本机备份时直接读档成功', async () => {
+  await withTempDir(async (dir) => {
+    const { exec } = await initFull(dir)
+    const backup = path.join(dir, 'memories.json.bak')
+    await writeFile(backup, JSON.stringify({ records: [{ id: 'mem-auto-1', title: '来自备份', type: 'event' }, { id: 'mem-auto-2', title: '第二条', type: 'event' }] }), 'utf8')
+    const result = await exec('heartprint_admin', { action: 'restore', source: 'auto', confirm: true })
+    assert.equal(result.ok, true)
+    assert.ok(result.added + result.updated >= 2)
+    const store = JSON.parse(await readFile(path.join(dir, 'memories.json'), 'utf8'))
+    assert.ok(store.records.some((record) => record.id === 'mem-auto-1'))
+  })
+})
+
+test('自动搜寻：没有备份也没有加密档时返回 not-found', async () => {
+  await withTempDir(async (dir) => {
+    const { exec } = await initFull(dir)
+    const result = await exec('heartprint_admin', { action: 'restore', source: 'auto', confirm: true })
+    assert.equal(result.ok, false)
+    assert.equal(result.error.code, 'not-found')
+  })
+})
