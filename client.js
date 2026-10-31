@@ -104,6 +104,7 @@ window.__ModuleLoader__.load({
       const [restoreForm, setRestoreForm] = useState({ source: 'document', path: '', id: '' })
       const [restoreMessage, setRestoreMessage] = useState(null)
       const [restoring, setRestoring] = useState(false)
+      const [autoOffer, setAutoOffer] = useState(false)
 
       const applyState = useCallback((payload) => {
         if (!payload || payload.ok === false) return
@@ -205,6 +206,7 @@ window.__ModuleLoader__.load({
                 .catch(() => {})
             } else {
               setRestoreMessage({ kind: 'bad', text: readError(payload) })
+              setAutoOffer(!(payload && payload.error && payload.error.code === 'read-only'))
             }
           })
           .catch(() => setRestoreMessage({ kind: 'bad', text: '读档失败：接口没响应' }))

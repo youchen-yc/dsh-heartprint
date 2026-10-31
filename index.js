@@ -24,7 +24,7 @@
 
 import os from 'node:os'
 import path from 'node:path'
-import { existsSync } from 'node:fs'
+import { existsSync, readdirSync } from 'node:fs'
 import { copyFile, readFile, stat } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 
@@ -960,7 +960,7 @@ export function apply(ctx, rawConfig = {}) {
   async function restoreFromSource(args) {
     await ensureReady()
     const now = Date.now()
-    const source = args.source === 'archive' ? 'archive' : args.source === 'document' ? 'document' : 'backup'
+    const source = ['archive', 'document', 'auto'].includes(args.source) ? args.source : 'backup'
     const warnings = []
     const beforeCount = state.store.records.length
     const stamp = new Date(now).toISOString().replace(/[:.]/g, '-')
@@ -973,7 +973,47 @@ export function apply(ctx, rawConfig = {}) {
     }
 
     let incoming = []
-    if (source === 'archive') {
+    if (source === 'auto') {
+      // 自动搜寻：先找本机备份文件（含 .bak / 读档前快照 / 维护快照），再退到加密档案。
+      const candidates = []
+      for (const name of ['memories.json.bak']) {
+        candidates.push(path.join(dataDir, name))
+      }
+      try {
+        for (const name of readdirSync(dataDir)) {
+          if (name.startsWith('memories.json.pre-restore-') || name.startsWith('memories.json.corrupt-')) candidates.push(path.join(dataDir, name))
+        }
+      } catch {}
+      try {
+        for (const name of readdirSync(path.join(dataDir, '.snapshots'))) {
+          if (/^memories-.*\.json$/.test(name)) candidates.push(path.join(dataDir, '.snapshots', name))
+        }
+      } catch {}
+      const withTime = []
+      for (const file of candidates) {
+        try {
+          const info = await stat(file)
+          withTime.push({ file, at: info.mtimeMs })
+        } catch {}
+      }
+      withTime.sort((a, b) => b.at - a.at)
+      for (const item of withTime) {
+        try {
+          const parsed = JSON.parse(await readFile(item.file, 'utf8'))
+          if (Array.isArray(parsed.records) && parsed.records.length) { incoming = parsed.records; warnings.push('自动搜寻：使用了本机备份 ' + path.basename(item.file)); break }
+        } catch {}
+      }
+      if (!incoming.length) {
+        const journal = await state.storeObj.readArchiveJournal()
+        const seen = new Set()
+        for (const entry of [...journal].reverse()) {
+          const snap = entry && (entry.record || entry.before)
+          if (snap && snap.id && !seen.has(snap.id)) { seen.add(snap.id); incoming.push(snap) }
+        }
+        if (incoming.length) warnings.push('自动搜寻：使用了加密档案中的 ' + incoming.length + ' 条原文')
+      }
+      if (!incoming.length) return fail('not-found', '没有找到可自动搜寻的备份或加密档案')
+    } else if (source === 'archive') {
       const id = cleanText(args.id, 120)
       if (!id) return fail('missing-id', '读档需要 id：要恢复哪条记忆（可用 recall 结果里的 id）')
       const journal = await state.storeObj.readArchiveJournal()
@@ -1633,7 +1673,7 @@ export function apply(ctx, rawConfig = {}) {
         }
       }
       if (isRestoreRoute) {
-        const source = body.source === 'archive' || body.source === 'document' || body.source === 'backup' ? body.source : ''
+        const source = ['archive', 'document', 'backup', 'auto'].includes(body.source) ? body.source : ''
         if (!source) {
           return deny(res, 400, { ok: false, error: { code: 'bad-source', message: 'source 必须是 backup / archive / document' } }, {}, req, 'bad-source')
         }
