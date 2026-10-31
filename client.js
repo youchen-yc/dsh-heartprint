@@ -277,7 +277,7 @@ window.__ModuleLoader__.load({
             ),
         h('div', { style: S.card },
           h('h3', { style: S.title }, '记忆读档'),
-          h('p', { style: S.hint }, '从交付文档、备份文件或加密档案把记忆读回来；读档前会自动留一份备份。'),
+          h('p', { style: S.hint }, '从你手上的交付文档把记忆读回来；读档前会自动留一份备份。'),
           h(Field, { label: '交付文档', hint: '填你手上那份交付文档（.md）的完整路径' },
             h('input', { style: S.input, value: restoreForm.path, onChange: updateRestore('path'), placeholder: 'D:\\心印交付\\…md' })),
           h('div', null,
