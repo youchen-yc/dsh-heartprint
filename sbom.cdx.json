@@ -1,10 +1,10 @@
 {
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
-  "serialNumber": "urn:uuid:1d238e22-dd00-400e-2bb8-349b39cb1c23",
+  "serialNumber": "urn:uuid:961555d9-4923-4e55-250e-771d2a6138f4",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-10-31T21:58:07.847Z",
+    "timestamp": "2026-10-31T22:11:12.903Z",
     "tools": [
       {
         "vendor": "heartprint",
@@ -144,13 +144,13 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "0d556b8bf246682b2d177d37906f7ddbf75bd6cae73383223e09c5bafb7d1a16"
+          "content": "a2be2b32f6972f4aa3fc076d92098b5c0552298fdb44515d5f99dbaee2cccf32"
         }
       ],
       "properties": [
         {
           "name": "size",
-          "value": "79678"
+          "value": "79623"
         }
       ]
     },
