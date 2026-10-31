@@ -320,7 +320,7 @@ window.__ModuleLoader__.load({
           const used = 0
           return h('div', { style: S.card },
             h('h3', { style: S.title }, '导出备份'),
-            h('p', { style: S.hint }, '把记忆库、配置、加密档案和文档打包成一个 zip，重装或换机前用。'),
+            h('p', { style: S.hint }, '把记忆、设置和文档打包成一个 zip，重装或换机前用。'),
             h(Field, { label: '导出目录', hint: '填一个已存在的目录' },
               h('input', { style: S.input, value: form.exportDir || '', onChange: (event) => setForm((current) => (current ? { ...current, exportDir: event.target.value } : current)), placeholder: '例如 D:\\备份' })),
             h('button', {
