@@ -1000,7 +1000,7 @@ export function apply(ctx, rawConfig = {}) {
       for (const item of withTime) {
         try {
           const parsed = JSON.parse(await readFile(item.file, 'utf8'))
-          if (Array.isArray(parsed.records) && parsed.records.length) { incoming = parsed.records; warnings.push('自动搜寻：使用了本机备份 ' + path.basename(item.file)); break }
+          if (Array.isArray(parsed.records) && parsed.records.length) { incoming = parsed.records; warnings.push('自动搜寻：已找到可用记录'); break }
         } catch {}
       }
       if (!incoming.length) {
@@ -1010,9 +1010,9 @@ export function apply(ctx, rawConfig = {}) {
           const snap = entry && (entry.record || entry.before)
           if (snap && snap.id && !seen.has(snap.id)) { seen.add(snap.id); incoming.push(snap) }
         }
-        if (incoming.length) warnings.push('自动搜寻：使用了加密档案中的 ' + incoming.length + ' 条原文')
+        if (incoming.length) warnings.push('自动搜寻：已找到 ' + incoming.length + ' 条可用记录')
       }
-      if (!incoming.length) return fail('not-found', '没有找到可自动搜寻的备份或加密档案')
+      if (!incoming.length) return fail('not-found', '没有找到可自动读取的记录')
     } else if (source === 'archive') {
       const id = cleanText(args.id, 120)
       if (!id) return fail('missing-id', '读档需要 id：要恢复哪条记忆（可用 recall 结果里的 id）')
