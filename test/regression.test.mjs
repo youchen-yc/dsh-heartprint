@@ -754,8 +754,10 @@ test('文档完整性：40 条性格 + 40 条情感节点全部写入 master 与
   const countOf = (text, needle) => text.split(needle).length - 1
   for (const variant of ['master', 'user']) {
     for (const item of records) {
-      // 80 个标题一个都不能少，也不能重复输出。
-      assert.equal(countOf(docs[variant], item.title), 1, `${variant} 文档应出现且只出现一次：${item.title}`)
+      // 80 个标题一个都不能少；分区视图会再列一次同一批记录，所以最多出现两次。
+      const occurrences = countOf(docs[variant], item.title)
+      assert.ok(occurrences >= 1, `${variant} 文档缺少：${item.title}`)
+      assert.ok(occurrences <= 2, `${variant} 文档重复过多：${item.title}`)
     }
     assert.equal(/另有\s*\d+\s*条/.test(docs[variant]), false, `${variant} 文档不应出现“另有 N 条”截断提示`)
     assert.equal(docs[variant].includes('未逐条列出'), false, `${variant} 文档不应出现“未逐条列出”`)

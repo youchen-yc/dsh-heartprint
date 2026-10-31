@@ -25,14 +25,15 @@
 import os from 'node:os'
 import path from 'node:path'
 import { existsSync } from 'node:fs'
-import { stat } from 'node:fs/promises'
+import { copyFile, readFile, stat } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 
 import { createWriteGuard } from './lib/fsguard.js'
-import { activePartitions, inferPartitions, partitionSummary, primingBoost, updatePrimingIndex } from './lib/partitions.js'
+import { activePartitions, buildPrimingIndex, inferPartitions, partitionSummary, primingBoost, updatePrimingIndex } from './lib/partitions.js'
 
 import {
   DEFAULT_POLICY,
+  FEELING_STAGES,
   MEMORY_TYPES,
   VALENCES,
   TYPE_LABELS,
@@ -890,6 +891,147 @@ export function apply(ctx, rawConfig = {}) {
     }
   }
 
+  async function actionRestore(args) {
+    await ensureReady()
+    const now = Date.now()
+    const source = args.source === 'archive' ? 'archive' : args.source === 'document' ? 'document' : 'backup'
+    const warnings = []
+    const beforeCount = state.store.records.length
+    const stamp = new Date(now).toISOString().replace(/[:.]/g, '-')
+    const snapshotPath = path.join(dataDir, `memories.json.pre-restore-${stamp}`)
+    try {
+      writeGuard.assert(snapshotPath, 'restore-backup')
+      await copyFile(path.join(dataDir, 'memories.json'), snapshotPath).catch(() => {})
+    } catch (error) {
+      warnings.push(`读档前备份失败：${messageOf(error)}`)
+    }
+
+    let incoming = []
+    if (source === 'archive') {
+      const id = cleanText(args.id, 120)
+      if (!id) return fail('missing-id', '读档需要 id：要恢复哪条记忆（可用 recall 结果里的 id）')
+      const journal = await state.storeObj.readArchiveJournal()
+      const entry = [...journal].reverse().find((item) => item && ((item.record && item.record.id === id) || (item.before && item.before.id === id)))
+      if (!entry) return fail('not-found', `加密档案里没有 id 为 ${id} 的原文`)
+      incoming = [entry.record || entry.before]
+    } else if (source === 'document') {
+      const rawPath = cleanText(args.path, 400)
+      if (!rawPath) return fail('missing-path', '读档需要 path：交付文档（.md）路径')
+      const abs = path.resolve(resolveHome(rawPath))
+      if (!writeGuard.allowed(abs)) return fail('forbidden-path', '读档路径必须位于数据目录或交付目录内')
+      let text
+      try {
+        text = await readFile(abs, 'utf8')
+      } catch (error) {
+        return fail('read-failed', `读取交付文档失败：${messageOf(error)}`)
+      }
+      const begin = text.indexOf('<!-- heartprint:records:begin -->')
+      const end = text.indexOf('<!-- heartprint:records:end -->')
+      if (begin < 0 || end <= begin) return fail('bad-document', '交付文档里没有读档附录（旧文档或手工改过）')
+      const payload = text.slice(begin + '<!-- heartprint:records:begin -->'.length, end).replace(/\s+/g, '')
+      let parsed
+      try {
+        parsed = JSON.parse(Buffer.from(payload, 'base64').toString('utf8'))
+      } catch {
+        return fail('bad-document', '交付文档附录解析失败')
+      }
+      if (!Array.isArray(parsed)) return fail('bad-document', '交付文档附录不是记录数组')
+      incoming = parsed
+    } else {
+      const rawPath = cleanText(args.path, 400)
+      if (!rawPath) return fail('missing-path', '读档需要 path：备份文件路径（memories.json 或 JSON 数组）')
+      const abs = path.resolve(resolveHome(rawPath))
+      if (!writeGuard.allowed(abs)) return fail('forbidden-path', '读档路径必须位于数据目录或交付目录内')
+      let text
+      try {
+        text = await readFile(abs, 'utf8')
+      } catch (error) {
+        return fail('read-failed', `读取备份失败：${messageOf(error)}`)
+      }
+      if (text.length > 5 * 1024 * 1024) return fail('backup-too-large', '备份超过 5MB，拒绝读取')
+      let parsed
+      try {
+        parsed = JSON.parse(text)
+      } catch {
+        return fail('bad-backup', '备份不是合法 JSON')
+      }
+      incoming = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.records) ? parsed.records : null
+      if (!incoming) return fail('bad-backup', '备份里没有 records 数组')
+      if (incoming.length > 5000) return fail('backup-too-large', '备份记录超过 5000 条，拒绝')
+    }
+
+    const existing = new Map(state.store.records.map((record) => [record.id, record]))
+    let added = 0
+    let updated = 0
+    let skipped = 0
+    let partitionFixed = 0
+    for (const raw of incoming) {
+      if (!raw || typeof raw !== 'object' || typeof raw.id !== 'string' || !raw.id) {
+        skipped += 1
+        continue
+      }
+      const record = {
+        id: raw.id,
+        type: MEMORY_TYPES.includes(raw.type) ? raw.type : 'event',
+        title: cleanText(raw.title, 120) || '读档记忆',
+        content: clip(normalizeText(raw.content), MAX_CONTENT_CHARS),
+        feeling: clip(normalizeText(raw.feeling), 2000),
+        valence: VALENCES.includes(raw.valence) ? raw.valence : 'neutral',
+        importance: clampInt(raw.importance, 0, 100, 50),
+        special: raw.special === true,
+        people: Array.isArray(raw.people) ? raw.people.map((value) => cleanText(value, 40)).filter(Boolean).slice(0, 20) : [],
+        tags: Array.isArray(raw.tags) ? raw.tags.map((value) => cleanText(value, 40)).filter(Boolean).slice(0, 20) : [],
+        happenedAt: parseTimestamp(raw.happenedAt) ?? now,
+        createdAt: parseTimestamp(raw.createdAt) ?? now,
+        updatedAt: now,
+        detailLevel: clampInt(raw.detailLevel, 0, 2, 2),
+        feelingStage: FEELING_STAGES.includes(raw.feelingStage) ? raw.feelingStage : 'full',
+        state: ['active', 'compressed', 'forgotten'].includes(raw.state) ? raw.state : 'active',
+        revision: clampInt(raw.revision, 0, 1000, 0),
+        lastDecayAt: Number(raw.lastDecayAt) || 0,
+        lastRecalledAt: Number(raw.lastRecalledAt) || 0,
+        recallCount: Number(raw.recallCount) || 0,
+        source: 'restore',
+      }
+      record.partitions = inferPartitions(record)
+      if (Array.isArray(raw.partitions) && raw.partitions.length && raw.partitions.join('|') !== record.partitions.join('|')) {
+        partitionFixed += 1
+      }
+      const prior = existing.get(record.id)
+      if (prior) {
+        Object.assign(prior, record, { createdAt: prior.createdAt })
+        updated += 1
+      } else {
+        state.store.records.push(record)
+        added += 1
+      }
+    }
+    if (!added && !updated) return fail('empty-restore', '备份里没有可恢复的记忆')
+
+    state.store.meta.priming = buildPrimingIndex(state.store.records, now)
+    const run = await runMaintenanceInternal({ now, reason: 'restore' })
+    return {
+      ok: true,
+      action: 'restore',
+      source,
+      summary: [
+        `读档完成：新增 ${added} · 更新 ${updated} · 跳过 ${skipped}${partitionFixed ? ` · 修正分区 ${partitionFixed}` : ''}。`,
+        `记录数：${beforeCount} → ${state.store.records.length}。`,
+        `本次维护：${describeChangeSummary(run.changes)}`,
+        warnings.length ? `提示：${warnings.join('；')}` : '',
+      ].filter(Boolean).join('\n'),
+      added,
+      updated,
+      skipped,
+      partitionFixed,
+      beforeCount,
+      afterCount: state.store.records.length,
+      backupPath: snapshotPath,
+      warnings,
+      maintenance: { changes: run.changes, vaultWritten: run.vaultWritten, warnings: run.warnings },
+    }
+  }
+
   async function actionVault(args) {
     await ensureReady()
     const info = await state.storeObj.vaultInfo()
@@ -967,6 +1109,8 @@ export function apply(ctx, rawConfig = {}) {
         return actionPolicy(args)
       case 'vault':
         return actionVault(args)
+        case 'restore':
+          return actionRestore(args)
       default:
         return fail('unknown-action', `未知 action：${action || '（空）'}`)
     }
@@ -1055,10 +1199,13 @@ export function apply(ctx, rawConfig = {}) {
       properties: {
         action: {
           type: 'string',
-          enum: ['maintain', 'doc', 'deliver', 'policy', 'vault'],
+          enum: ['maintain', 'doc', 'deliver', 'policy', 'vault', 'restore'],
           description: '要执行的动作',
         },
         sync: { type: 'boolean', description: 'maintain：是否强制同步内部档案' },
+        source: { type: 'string', enum: ['backup', 'archive', 'document'], description: 'restore：从备份文件读档（backup）或从加密档案恢复原文（archive）' },
+        path: { type: 'string', description: 'restore+backup：备份文件路径，必须在数据目录或交付目录内' },
+        id: { type: 'string', description: 'restore+archive：要恢复的记忆 id' },
         force: { type: 'boolean', description: 'maintain：同 sync' },
         which: { type: 'string', enum: ['master', 'user', 'status'], description: 'doc：读取哪一份' },
         full: { type: 'boolean', description: 'doc：是否返回全文' },
