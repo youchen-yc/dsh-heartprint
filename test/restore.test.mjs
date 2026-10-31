@@ -60,7 +60,7 @@ test('读档（备份文件）：恢复丢失记忆、重算分区、内容与�
 
     const second = makeCtx()
     apply(second.ctx, { dataDir: dir })
-    const restore = await call(second.tools, 'heartprint_admin', { action: 'restore', source: 'backup', path: backupPath })
+    const restore = await call(second.tools, 'heartprint_admin', { action: 'restore', source: 'backup', path: backupPath, confirm: true })
     assert.equal(restore.ok, true)
     assert.equal(restore.afterCount, 3)
     assert.ok(restore.added >= 1)
@@ -89,7 +89,7 @@ test('读档（加密档案）：按 id 恢复再巩固之前的原文', async (
     const id = remembered.record.id
     await call(tools, 'heartprint', { action: 'reconsolidate', id, content: '改写：其实晚上见。' })
 
-    const restore = await call(tools, 'heartprint_admin', { action: 'restore', source: 'archive', id })
+    const restore = await call(tools, 'heartprint_admin', { action: 'restore', source: 'archive', id, confirm: true })
     assert.equal(restore.ok, true)
 
     const recall = await call(tools, 'heartprint', { action: 'recall', query: '见面' })
@@ -148,7 +148,7 @@ test('读档（交付文档）：能从交付文档完整读回全部记忆，�
 
     const second = makeCtx()
     apply(second.ctx, { dataDir: dir })
-    const restore = await call(second.tools, 'heartprint_admin', { action: 'restore', source: 'document', path: keptDoc })
+    const restore = await call(second.tools, 'heartprint_admin', { action: 'restore', source: 'document', path: keptDoc, confirm: true })
     assert.equal(restore.ok, true)
     assert.equal(restore.afterCount, 3)
     assert.equal(restore.added, 3)

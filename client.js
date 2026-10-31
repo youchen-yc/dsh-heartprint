@@ -190,8 +190,8 @@ window.__ModuleLoader__.load({
         setRestoring(true)
         setRestoreMessage(null)
         const body = restoreForm.source === 'archive'
-          ? { source: 'archive', id: restoreForm.id }
-          : { source: restoreForm.source, path: restoreForm.path }
+          ? { source: 'archive', id: restoreForm.id, confirm: true }
+          : { source: restoreForm.source, path: restoreForm.path, confirm: true }
         fetch('/dsh-heartprint/api/restore', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
@@ -295,6 +295,56 @@ window.__ModuleLoader__.load({
               restoring ? '读档中…' : '开始读档'),
             restoreMessage ? h('span', { style: restoreMessage.kind === 'ok' ? S.ok : S.bad }, ` ${restoreMessage.text}`) : null),
         ),
+        (() => {
+          const used = Number((loaded && loaded.records) || 0)
+          const limit = Number(policy.maxRecords) || 20000
+          const maxLimit = 50000
+          const visible = used >= limit && limit < maxLimit
+          const atMax = limit >= maxLimit
+          if (!visible && !atMax) return null
+          return h('div', { style: S.card },
+            h('h3', { style: S.title }, '容量'),
+            h('p', { style: S.hint }, h('span', null, '记忆 ' + used + ' / ' + limit)),
+            h('button', {
+              style: atMax ? { ...S.button, ...S.buttonDisabled } : S.button,
+              disabled: atMax,
+              onClick: () => {
+                if (atMax) return
+                const next = Math.min(50000, Math.max(20000, Math.ceil((limit * 1.5) / 1000) * 1000))
+                fetch('/dsh-heartprint/api/policy', {
+                  method: 'POST',
+                  headers: { 'content-type': 'application/json' },
+                  body: JSON.stringify({ patch: { maxRecords: next } }),
+                })
+                  .then((res) => res.json())
+                  .then(() => fetch('/dsh-heartprint/api/state', { headers: { accept: 'application/json' } }))
+                  .then((res) => res.json())
+                  .then((payload) => applyState(payload))
+                  .catch(() => {})
+              },
+            }, atMax ? '已达上限' : '记忆容量已满，点击扩容'))
+        })(),
+        (() => {
+          const used = 0
+          return h('div', { style: S.card },
+            h('h3', { style: S.title }, '导出备份'),
+            h('p', { style: S.hint }, '把记忆库、配置、加密档案和文档打包成一个 zip，重装或换机前用。'),
+            h(Field, { label: '导出目录', hint: '填一个已存在的目录' },
+              h('input', { style: S.input, value: form.exportDir || '', onChange: (event) => setForm((current) => (current ? { ...current, exportDir: event.target.value } : current)), placeholder: '例如 D:\\备份' })),
+            h('button', {
+              style: S.button,
+              onClick: () => {
+                fetch('/dsh-heartprint/api/export', {
+                  method: 'POST',
+                  headers: { 'content-type': 'application/json' },
+                  body: JSON.stringify({ targetDir: form.exportDir || '' }),
+                })
+                  .then((res) => res.json())
+                  .then((payload) => setMessage({ kind: payload.ok ? 'ok' : 'bad', text: payload.ok ? ('已导出到 ' + payload.path) : ('导出失败：' + (payload.error && payload.error.code)) }))
+                  .catch(() => setMessage({ kind: 'bad', text: '导出失败：接口没响应' }))
+              },
+            }, '导出备份'))
+        })(),
         h('div', { style: S.card },
           h('h3', { style: S.title }, '遗忘日历（查看）'),
           h('p', { style: S.hint }, `重要阈值 ${policy.importantThreshold ?? 70} · 次重要阈值 ${policy.secondaryThreshold ?? 40} · 自动维护 ${policy.syncIntervalDays ?? 30} 天/次`),

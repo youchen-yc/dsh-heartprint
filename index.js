@@ -29,6 +29,7 @@ import { copyFile, readFile, stat } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 
 import { createWriteGuard } from './lib/fsguard.js'
+import { snapshotStore, capacityAlert, exportBackup, inspectStore, applyRepairs, readSelfCheck, writeSelfCheck } from './lib/protect.js'
 import { activePartitions, buildPrimingIndex, inferPartitions, partitionSummary, primingBoost, updatePrimingIndex } from './lib/partitions.js'
 
 import {
@@ -199,6 +200,28 @@ export function apply(ctx, rawConfig = {}) {
     return run
   }
 
+  async function inspectIfDue() {
+    if (state.policy.readOnly) return
+    const now = Date.now()
+    const prevRead = await readSelfCheck(dataDir)
+    const prev = prevRead && prevRead.ok ? prevRead.result : null
+    if (prev && typeof prev.at === 'number' && now - prev.at < 7 * DAY_MS) { state.selfCheckResult = prev; return }
+    const result = await inspectStore({
+      dataDir,
+      store: state.store,
+      policy: state.policy,
+      now,
+      docPaths: [state.storeObj.paths.master, state.storeObj.paths.user],
+      vaultInfo: async () => state.storeObj.vaultInfo(),
+    })
+    if (prevRead && prevRead.reason === 'corrupt') {
+      result.items.push({ id: 'selfcheck-file', status: 'needs-human', detail: '体检结果文件损坏，已重新生成' })
+      result.summary = result.summary + ' · needs-human 1'
+    }
+    await writeSelfCheck(dataDir, result, writeGuard)
+    state.selfCheckResult = result
+  }
+
   async function init() {
     // 首次「开始使用」确认：数据目录还不存在、且当前是 GUI 环境时，先不创建，
     // 让用户在 设置 → 心印 里点一次「开始使用」。无 GUI（测试/无头）时自动同意。
@@ -221,6 +244,10 @@ export function apply(ctx, rawConfig = {}) {
     state.storeObj = storeObj
     state.store = loaded.store
     state.policy = resolvePolicy(DEFAULT_POLICY, patch, loaded.policy)
+    // 首次安装落盘：load 只改内存；这里在非只读且没有库文件时补一次空库。
+    if (!state.policy.readOnly && !existsSync(path.join(dataDir, 'memories.json'))) {
+      await storeObj.saveStore(state.store).catch((error) => log.warn?.('[heartprint] 初始库写入失败：' + messageOf(error)))
+    }
     if (!state.policy.consentAt) {
       state.policy.consentAt = Date.now()
     }
@@ -242,6 +269,7 @@ export function apply(ctx, rawConfig = {}) {
         backupPath: null,
       }
     }
+    await inspectIfDue().catch((error) => log.warn?.('[heartprint] 低频体检失败：' + messageOf(error)))
     return state
   }
 
@@ -289,6 +317,7 @@ export function apply(ctx, rawConfig = {}) {
   }
 
   async function runMaintenanceInternal({ now = Date.now(), forceVault = false, reason = 'maintain' } = {}) {
+    if (state.policy.readOnly) return { changes: {}, docPaths: [], vaultWritten: false, warnings: ['只读模式：跳过维护'] }
     await ensureReady()
     const storeObj = state.storeObj
     const plan = planMaintenance({ store: state.store, policy: state.policy, now, forceVault })
@@ -450,6 +479,23 @@ export function apply(ctx, rawConfig = {}) {
 
     // 统一落盘：自动交付更新后的 meta（lastDeliveredAt / deliveredPath /
     // deliveries）随本轮一起持久化。归档失败时早已在上面 throw，不会走到这里。
+    let repairs = []
+    if (!state.policy.readOnly) {
+      try {
+        const repairResult = await applyRepairs({
+          dataDir,
+          store: plan.store,
+          policy: state.policy,
+          now,
+          docPaths: docPaths ? [docPaths.master, docPaths.user].filter(Boolean) : [],
+        })
+        repairs = (repairResult && (repairResult.repaired || repairResult.fixed)) || []
+        if (repairResult && Array.isArray(repairResult.warnings) && repairResult.warnings.length) warnings.push(...repairResult.warnings)
+        if (repairs.length) warnings.push('体检修复：' + repairs.join('、'))
+      } catch (error) {
+        warnings.push('体检修复失败：' + messageOf(error))
+      }
+    }
     await storeObj.saveStore(plan.store)
     state.store = plan.store
     return {
@@ -463,6 +509,7 @@ export function apply(ctx, rawConfig = {}) {
       bodyHash: docs.bodyHash,
       stats: plan.stats,
       archived,
+      repairs,
       reason,
       delivery: plan.delivery
         ? {
@@ -509,7 +556,7 @@ export function apply(ctx, rawConfig = {}) {
     await ensureReady()
     const now = Date.now()
     const title = cleanText(args.title, 120)
-    const content = clip(normalizeText(args.content), MAX_CONTENT_CHARS)
+    const content = clip(normalizeText(args.content), 8000)
     if (!title && !content) return fail('missing-content', '需要 title 或 content：要记住的事情')
     const type = MEMORY_TYPES.includes(args.type) ? args.type : 'event'
     const valence = VALENCES.includes(args.valence) ? args.valence : 'neutral'
@@ -563,6 +610,7 @@ export function apply(ctx, rawConfig = {}) {
       record: publicRecord(record),
       maintenance: {
         changes: run.changes,
+        repairs: Array.isArray(run.repairs) ? run.repairs : [],
         vaultWritten: run.vaultWritten,
         warnings: run.warnings,
       },
@@ -683,8 +731,23 @@ export function apply(ctx, rawConfig = {}) {
       ? state.store.meta.deliveredPath
       : ''
     const delivery = computeDelivery({ store: state.store, policy: state.policy, now })
+    const selfCheckRead = await readSelfCheck(dataDir)
+    const selfCheckLines = (() => {
+      if (selfCheckRead.ok) {
+        const result = selfCheckRead.result || {}
+        const items = Array.isArray(result.items) ? result.items : []
+        const needs = items.filter((entry) => entry.status === 'needs-human')
+        const lines = [`- 上次体检：${formatDateTime(result.at || 0)} · ${result.summary || ''}`]
+        for (const entry of needs.slice(0, 5)) lines.push(`  · ${entry.id}：${entry.detail || entry.status}`)
+        if (needs.length > 5) lines.push(`  · …另有 ${needs.length - 5} 条 needs-human`)
+        return lines
+      }
+      return [selfCheckRead.reason === 'corrupt' ? '- 上次体检：体检结果文件损坏' : '- 上次体检：尚未体检']
+    })()
     const lines = [
       '心印 · 记忆状态',
+      `- 容量：${state.store.records.length}/${state.policy.maxRecords || 20000}（满额可扩容）`,
+      `- 只读模式：${state.policy.readOnly ? '开' : '关'}`,
       `- 记录 ${stats.total} 条：清晰 ${stats.active} · 压缩 ${stats.compressed} · 淡忘 ${stats.forgotten} · 合并 ${stats.digests}`,
       `- 核心节点 ${counts.core} · 重要 ${counts.important} · 次重要 ${counts.secondary} · 琐碎 ${counts.trivial}`,
       `- 数据目录：${dataDir}`,
@@ -711,7 +774,7 @@ export function apply(ctx, rawConfig = {}) {
     return {
       ok: true,
       action: 'status',
-      summary: lines.join('\n'),
+      summary: [...lines, ...selfCheckLines].join('\n'),
       stats,
       counts,
       dataDir,
@@ -764,6 +827,7 @@ export function apply(ctx, rawConfig = {}) {
       action: 'maintain',
       summary: lines.join('\n'),
       changes: run.changes,
+      repairs: Array.isArray(run.repairs) ? run.repairs : [],
       vaultWritten: run.vaultWritten,
       warnings: run.warnings,
       documents: run.docPaths,
@@ -850,6 +914,8 @@ export function apply(ctx, rawConfig = {}) {
 
   async function actionPolicy(args) {
     await ensureReady()
+    if (state.policy.readOnly && !(args.patch && args.patch.readOnly === false)) return fail('read-only', '当前是只读模式，配置也不能改')
+    if (args.reset === true && args.confirm !== true) return fail('need-confirm', '重置遗忘日历需要确认')
     const now = Date.now()
     const wantsReset = args.reset === true
     const wantsSet = args.patch && typeof args.patch === 'object'
@@ -998,6 +1064,9 @@ export function apply(ctx, rawConfig = {}) {
         partitionFixed += 1
       }
       const prior = existing.get(record.id)
+      if (prior && args.confirm !== true) {
+        return fail('need-confirm', '覆盖已有记忆需要确认')
+      }
       if (prior) {
         Object.assign(prior, record, { createdAt: prior.createdAt })
         updated += 1
@@ -1251,6 +1320,17 @@ export function apply(ctx, rawConfig = {}) {
   // Registration
   // -------------------------------------------------------------------------
 
+  function losslessValue(v) {
+    if (v === undefined) return null
+    if (typeof v === 'number' && !Number.isFinite(v)) return null
+    if (Array.isArray(v)) return v.map(losslessValue)
+    if (v && typeof v === 'object') { const o = {}; for (const [k, x] of Object.entries(v)) o[k] = losslessValue(x); return o }
+    return v
+  }
+  const wrapExecute = (fn) => async (args = {}, exec = {}) => losslessValue(await fn(args, exec))
+  tool.execute = wrapExecute(tool.execute)
+  adminTool.execute = wrapExecute(adminTool.execute)
+
   ctx.effect(() => ctx.tools.register(tool))
   ctx.effect(() => ctx.tools.register(adminTool))
 
@@ -1391,6 +1471,11 @@ export function apply(ctx, rawConfig = {}) {
   // 新增路由不登记 → 直接 404（默认拒绝），这是 C-05「新增资源先登记权限点」的落地点；
   // read 与 admin-write 分开登记、鉴权策略不同，对应 C-06 管理/业务接口分离。
   const API_PERMISSIONS = Object.freeze({
+    '/dsh-heartprint/api/export': Object.freeze({
+      kind: 'admin-write',
+      methods: Object.freeze(['POST']),
+      auth: 'local-same-origin+json+rate-limit',
+    }),
     '/dsh-heartprint/api/restore': Object.freeze({
       kind: 'admin-write',
       methods: Object.freeze(['POST']),
@@ -1446,6 +1531,7 @@ export function apply(ctx, rawConfig = {}) {
       const isPolicyRoute = permission.kind === 'admin-write'
       const isConsentRoute = permission.kind === 'consent-write'
       const isRestoreRoute = url.pathname === '/dsh-heartprint/api/restore'
+      const isExportRoute = url.pathname === '/dsh-heartprint/api/export'
       if (!permission.methods.includes(req.method)) {
         return sendJson(
           res,
@@ -1527,14 +1613,33 @@ export function apply(ctx, rawConfig = {}) {
       if (!body || typeof body !== 'object' || Array.isArray(body)) {
         return deny(res, 400, { ok: false, error: { code: 'bad-body', message: '请求体必须是 JSON 对象' } }, {}, req, 'bad-body')
       }
+      if (isExportRoute) {
+        const targetDir = typeof body.targetDir === 'string' ? body.targetDir.trim() : ''
+        if (!targetDir) return sendJson(res, 400, { ok: false, error: { code: 'missing-path', message: '需要选择导出目录' } })
+        await ensureReady()
+        const resolved = path.resolve(resolveHome(targetDir))
+        let statInfo = null
+        try { statInfo = await stat(resolved) } catch { statInfo = null }
+        if (!statInfo || !statInfo.isDirectory()) {
+          return sendJson(res, 400, { ok: false, error: { code: 'bad-export-path', message: '导出目录不存在或不是目录' } })
+        }
+        const tempGuard = { assert(file) { if (!path.resolve(file).startsWith(resolved + path.sep)) throw Object.assign(new Error('越界'), { code: 'forbidden-path' }) } }
+        try {
+          const result = await exportBackup({ dataDir, targetDir: resolved, readOnly: state.policy.readOnly, guard: tempGuard })
+          audit('export', { size: result.size })
+          return sendJson(res, 200, result)
+        } catch (error) {
+          return sendJson(res, 400, { ok: false, error: { code: error?.code || 'export-failed', message: error?.message || String(error) } })
+        }
+      }
       if (isRestoreRoute) {
         const source = body.source === 'archive' || body.source === 'document' || body.source === 'backup' ? body.source : ''
         if (!source) {
           return deny(res, 400, { ok: false, error: { code: 'bad-source', message: 'source 必须是 backup / archive / document' } }, {}, req, 'bad-source')
         }
         const args = source === 'archive'
-          ? { source, id: String(body.id || '') }
-          : { source, path: String(body.path || '') }
+          ? { source, id: String(body.id || ''), confirm: body.confirm === true }
+          : { source, path: String(body.path || ''), confirm: body.confirm === true }
         const result = await withLock(() => restoreFromSource(args))
         if (result && result.ok !== false) audit('restore', { source, added: result.added || 0, updated: result.updated || 0 })
         return sendJson(res, result && result.ok === false ? 400 : 200, result)
