@@ -168,3 +168,24 @@ test('读档（交付文档）：能从交付文档完整读回全部记忆，�
     await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   }
 })
+
+test('读档防护（弱）：交付文档无附录被拒、空记录备份被拒', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'hp-restore-guard2-'))
+  try {
+    const { ctx, tools } = makeCtx()
+    apply(ctx, { dataDir: dir })
+    const plain = path.join(dir, 'plain.md')
+    await writeFile(plain, '# 没有读档附录的文档\n', 'utf8')
+    const noAppendix = await call(tools, 'heartprint_admin', { action: 'restore', source: 'document', path: plain })
+    assert.equal(noAppendix.ok, false)
+    assert.equal(noAppendix.error.code, 'bad-document')
+
+    const empty = path.join(dir, 'empty.json')
+    await writeFile(empty, JSON.stringify({ records: [] }), 'utf8')
+    const nothing = await call(tools, 'heartprint_admin', { action: 'restore', source: 'backup', path: empty })
+    assert.equal(nothing.ok, false)
+    assert.equal(nothing.error.code, 'empty-restore')
+  } finally {
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
+  }
+})
