@@ -1,6 +1,6 @@
 {
   "name": "dsh-heartprint",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "description": "心印：记忆类插件。可设置名字、性格与人格；只淡忘琐事，重要的会保留，特殊的会被记住。",
   "type": "module",
   "exports": {
