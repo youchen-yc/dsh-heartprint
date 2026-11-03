@@ -1,21 +1,294 @@
-MIT License
+# 游尘开放源码与署名许可协议
 
-Copyright (c) 2026 心印插件作者
+## Yuchen Open Source License, Version 1.0（YOSL-1.0）
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+> **引用必须署名。** Attribution Required — 任何引用本作品及其思想的人，都必须以显著方式表明来处与原作者。
+>
+> This license is free for everyone, including commercial use. Attribution is mandatory.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+| 条目 | 内容 |
+| --- | --- |
+| 协议名称 | 游尘开放源码与署名许可协议 |
+| 英文名称 | Yuchen Open Source License |
+| 版本 | 1.0（简称 YOSL-1.0） |
+| 版权所有者 | **游尘（Youchen）** |
+| 原始出处 | <https://github.com/youchen-yc> |
+| 首次发布 | 2026 年 11 月 |
+| 适用作品 | 作者以本协议发布的全部插件、软件、源代码、文档、设计、架构方案、技术思路与思想成果 |
+| 语言 | 中文、英文双语，同等效力；如有歧义，以中文文本为准 |
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+---
+
+## 序言
+
+本协议由游尘（下称「作者」）制定，适用于作者公开发布的全部作品。
+
+作者立此协议，出于三点明确的意愿：
+
+1. **开放**——本作品对任何人免费开放，可以自由使用、修改、再发布、商用，不设门槛，不看身份、地域与用途，愿它真的能帮上忙、做成事。
+2. **署名**——作者不图回报，只要求一件事：**引用就要说清来处**。无论引用的是代码、插件、软件、文档、设计，还是背后的想法、思路、架构与思想，都必须注明"来自游尘的某某作品"。这是作者最看重的一条，也是本协议的核心条件。
+3. **传承**——把作品献给中国的开源事业，愿它造福更多人；也愿每一个受益者，日后有能力时把这份善意传下去。
+
+---
+
+## 第 1 条 定义
+
+**1.1 「本作品」**
+指作者以本协议发布的全部内容，包括但不限于：计算机程序源代码与目标代码、安装包、插件、脚本、配置文件、构建产物、测试用例、技术文档、说明与教程、图表与图示、图标与界面设计、视觉素材、数据结构、算法、架构设计方案、工程方法论、设计思路、思想观点，以及上述任何内容的组成部分、改编、翻译、汇编、衍生与再发布版本。
+
+**1.2 「引用」**
+指以任何方式使用、复制、摘录、转录、转载、分发、发布、再许可、销售、集成、编译、反编译、二次开发、移植、改写、翻译、演示、教学、写作、评议、推荐、展示上述内容的行为，**包括仅引用其中的想法、思路、架构、方案与思想观点而未复制具体表达的情形**。
+
+**1.3 「衍生作品」**
+指基于本作品全部或部分内容创作的任何新作品，包括修改版、翻译版、汇编版、移植版、重构版、二次封装版，以及把本作品的思路与设计实现为其他语言、平台或产品的成果。
+
+**1.4 「商用」**
+指以营利为目的的任何使用，包括销售、随商品或服务搭售、集成进商业产品、提供付费服务、企业内部商业运营、以本作品招揽客户等。
+
+**1.5 「署名信息」**
+指同时包含以下全部要素的声明：① 原作者姓名「游尘（Youchen）」；② 原始出处链接（本作品的仓库或发布页地址）；③ 作品名称；④ 本协议名称与版本（YOSL-1.0）。具体到每个作品的逐项内容，以该作品随附的 `NOTICE` 文件为准。
+
+**1.6 「作者」**
+指游尘（Youchen），本作品的著作权人。
+
+---
+
+## 第 2 条 授权范围
+
+在完全遵守本协议（尤其是第 3 条署名义务）的前提下，作者授予你一项**全球范围内、永久、不可撤销、免费、非独占、可再许可**的授权，允许你：
+
+**2.1** 使用、安装、运行、复制本作品；
+**2.2** 修改、改编、翻译、汇编、重构、衍生；
+**2.3** 公开发布、分发、再许可、转让；
+**2.4** **商业使用**——包括销售、集成进商业产品、提供付费服务、用于企业内部商业运营，无需向作者支付任何费用，无需另行取得授权；
+**2.5** 用于学习、教学、科研、竞赛、公益活动、个人项目；
+**2.6** 在遵守第 3 条的前提下，将本作品用于闭源或开源的任何项目。
+
+本协议不限制你选择的技术路线、商业模式与发布方式。
+
+---
+
+## 第 3 条 署名义务（本协议核心条件）
+
+**3.1** 任何引用都必须以**清晰、显著、易于识别、可长期保留**的方式表明来处与原作者，至少包含：
+
+- （a）原作者：**游尘（Youchen）**；
+- （b）原始出处：本作品的仓库或发布页地址（见该作品 `NOTICE`）；
+- （c）作品名称与版本；
+- （d）本协议名称与版本：游尘开放源码与署名许可协议 1.0（YOSL-1.0）。
+
+**3.2 署名出现的位置**，按引用方式至少满足其一，且应与引用的规模相称：
+
+| 引用形式 | 署名位置要求 |
+| --- | --- |
+| 源代码引用或修改 | 源文件头部注释或项目 README、`NOTICE`、`CREDITS` |
+| 软件、插件、App | 「关于 / 致谢 / 开源许可」页面，或安装包内的许可说明 |
+| 文档、方案、教程 | 封面、页脚、文末「出处与致谢」 |
+| 文章、论文、帖子 | 引用处或文末参考文献、致谢 |
+| 演讲、演示、视频 | 首页、致谢页、片尾或简介 |
+| 图片、海报、设计稿 | 画面角落、图注或交付说明 |
+| 只引用想法、思路、架构 | 对应论述处、「思路来源」说明或致谢 |
+
+**3.3 修改后的署名**
+对本作品进行修改、衍生或再发布的，必须在显著位置注明：「本作品修改自游尘的《作品名》」，并简要说明修改内容与修改日期。
+
+**3.4 保留义务**
+不得删除、遮蔽、篡改本作品的版权声明、署名信息与协议全文；分发本作品或其衍生作品时，必须一并附带本协议（`LICENSE`）与署名声明（`NOTICE`）。
+
+**3.5 不得暗示背书**
+不得以任何方式暗示作者为你的作品、产品、服务、立场或行为背书，除经作者事先书面同意。
+
+**3.6 商用同样署名**
+商业使用不得以「白牌」「去标识」「内部化」等方式抹去作者署名；对外提供的产品、界面、文档中仍须保留署名信息。
+
+**3.7 不得冒充**
+不得将本作品的全部或实质部分冒充为自己的原创，不得删除署名后以「原创」名义发布、售卖或申报。
+
+---
+
+## 第 4 条 思想与设计的署名
+
+**4.1** 作者在本作品中公开的设计思路、架构方案、方法论、算法思想、写作框架、工程经验与观点判断，依著作权法可能不构成受保护的「表达」，但作者在此**明确要求**：任何借鉴、引用、复述、改写、转述或以之为基础继续发展的人，均应在对应位置注明——「思路来源：游尘《作品名》」。
+
+**4.2** 本条是作者公开的署名要求，也是使用本协议的前提条件之一。作者不以本条限制任何人使用这些思想，只要求受益者说清来处。
+
+**4.3** 本条不影响任何人独立作出相同或相似的思想成果，也不主张对思想本身享有排他权利。
+
+---
+
+## 第 5 条 回馈与传承
+
+**5.1** 作者鼓励（但不强制）你把所做的改进、修复与增强，以公开方式回馈给原项目或中国的开源社区。
+**5.2** 作者鼓励（但不强制）你在有能力时帮助他人、参与开源、传播技术，让这份开放继续下去。
+**5.3** 本协议不附带任何政治立场，也不要求你认同作者的任何观点。
+
+---
+
+## 第 6 条 免责声明
+
+**6.1** 本作品按「现状」（AS IS）提供，不附带任何明示或默示的保证，包括但不限于适销性、特定用途适用性、权利无瑕疵与不侵权的保证。
+**6.2** 作者不对使用本作品产生的任何直接、间接、偶然、特殊、惩罚性或后果性损失承担责任，包括但不限于数据丢失、设备损坏、业务中断、利润损失，即使已被告知可能发生此类损失。
+**6.3** 你应自行评估本作品是否适合你的使用场景，并自行承担使用风险。涉及系统级、安全级、生产环境的操作，请先在隔离环境中验证。
+
+---
+
+## 第 7 条 授权的终止与恢复
+
+**7.1** 你违反本协议任何条款（尤其是第 3 条署名义务）时，本协议授予你的全部授权**自动终止**。
+**7.2** 你在收到作者通知后 30 日内完成纠正（补上署名、恢复声明、停止侵权使用等），授权自动恢复。
+**7.3** 授权终止不影响作者就终止前已发生的违约行为追究责任，也不影响第 6 条免责声明的效力。
+
+---
+
+## 第 8 条 协议版本
+
+**8.1** 本协议当前有效版本为 1.0（YOSL-1.0）。
+**8.2** 作者可发布后续版本；未在作品中注明适用版本的，适用作者最新发布的版本。
+**8.3** 新版本发布后，旧版本作品仍可继续按原版本协议使用。
+
+---
+
+## 第 9 条 适用法律与争议解决
+
+**9.1** 本协议适用中华人民共和国法律（不含港澳台地区法律冲突规则）。
+**9.2** 因本协议产生的争议，双方应先友好协商；协商不成的，提交作者所在地有管辖权的人民法院解决。
+
+---
+
+## 第 10 条 其他
+
+**10.1** 本协议不排除、不限制、不转让作者的著作人身权，包括署名权、修改权、保护作品完整权；该等权利依法不可转让、保护期不受限制。
+**10.2** 本协议任何条款被认定为无效或不可执行的，不影响其余条款的效力，其余条款继续有效。
+**10.3** 本协议以中英文双语发布，两种文本同等效力；如产生歧义，以中文文本为准。
+**10.4** 本协议取代此前就同一作品作出的任何口头或书面的许可约定。
+
+---
+
+## English Version
+
+# Yuchen Open Source License (YOSL-1.0) — Attribution Required
+
+Copyright © 2026 **Youchen (游尘)**. All rights reserved except as expressly granted below.
+
+Original source: <https://github.com/youchen-yc>
+
+### Preamble
+
+This license is established by Youchen ("the Author") and applies to all works published by the Author under it. The Author grants these rights freely — to anyone, for any purpose, including commercial use — on one condition: **attribution**. Whoever uses or references the work, in whole or in part, including its ideas, designs, architectures and thinking, must clearly state its origin and the Author.
+
+### 1. Definitions
+
+**1.1 "Work"** means all content published by the Author under this license, including but not limited to source and object code, packages, plugins, scripts, configuration, build artifacts, tests, documentation, diagrams, icons and interface designs, visual assets, data structures, algorithms, architectures, engineering methods, design ideas and opinions, and any part, adaptation, translation, compilation, derivative or redistribution thereof.
+
+**1.2 "Reference"** means any use, copy, excerpt, transcription, reproduction, distribution, publication, sublicensing, sale, integration, compilation, decompilation, modification, porting, rewriting, translation, demonstration, teaching, writing, review, recommendation or display of the Work, **including reference to its ideas, designs, architectures and thinking without copying any specific expression**.
+
+**1.3 "Derivative Work"** means any new work based on all or part of the Work, including modified, translated, compiled, ported, refactored or re-packaged versions, and any implementation of the Work's ideas or designs in another language, platform or product.
+
+**1.4 "Commercial Use"** means any use for profit, including sale, bundling with goods or services, integration into commercial products, paid services, internal commercial operations, or using the Work to attract customers.
+
+**1.5 "Attribution Information"** means a statement containing all of: (i) the Author's name "Youchen (游尘)"; (ii) the original source link; (iii) the Work's name; (iv) this license's name and version (YOSL-1.0). The specific content for each Work is listed in its accompanying `NOTICE` file.
+
+### 2. Grant of Rights
+
+Subject to full compliance with this license (especially Section 3, Attribution), the Author grants you a worldwide, perpetual, irrevocable, royalty-free, non-exclusive, sublicensable license to:
+
+**2.1** use, install, run and copy the Work;
+**2.2** modify, adapt, translate, compile, refactor and create derivative works;
+**2.3** publish, distribute, sublicense and transfer;
+**2.4** **use commercially** — including selling, integrating into commercial products, providing paid services and internal commercial operations — without any fee or further permission;
+**2.5** use for study, teaching, research, competitions, public-interest projects and personal projects;
+**2.6** incorporate into closed-source or open-source projects, subject to Section 3.
+
+### 3. Attribution (Core Condition)
+
+**3.1** Any Reference must clearly, prominently, legibly and durably state the origin and the Author, including at least: (a) the Author: **Youchen (游尘)**; (b) the original source link (see the Work's `NOTICE`); (c) the Work's name and version; (d) this license's name and version: Yuchen Open Source License 1.0 (YOSL-1.0).
+
+**3.2** Attribution must appear in a position proportionate to the Reference — e.g. source file headers or project README/`NOTICE`/`CREDITS`; an "About / Acknowledgements / Open Source Licenses" screen for software, plugins and apps; cover, footer or "Source & Acknowledgements" section for documents; citation or acknowledgements for articles and papers; title, acknowledgement or closing credits for talks and videos; image corner, caption or delivery notes for images and designs; and an explicit "idea source" note when only ideas, designs or architectures are referenced.
+
+**3.3** Modified versions must prominently state: "This work is modified from 《Work Name》 by Youchen", with a brief description of changes and dates.
+
+**3.4** You must not remove, obscure or alter copyright notices, Attribution Information or this license. When distributing the Work or a Derivative Work, you must include this license (`LICENSE`) and the `NOTICE` file.
+
+**3.5** You must not suggest that the Author endorses your work, product, service, position or conduct without prior written consent.
+
+**3.6** Commercial Use does not exempt you from attribution; "white-label" or de-identification is not permitted.
+
+**3.7** You must not pass off the Work, in whole or in substantial part, as your own original creation.
+
+### 4. Ideas and Design Attribution
+
+**4.1** Design ideas, architectures, methods, algorithms, frameworks and opinions disclosed in the Work may not constitute protectable "expression" under copyright law. Nevertheless, the Author expressly requires anyone who borrows, references, restates, rewrites, or builds upon them to state: "Idea source: 《Work Name》 by Youchen".
+
+**4.2** This Section is the Author's public attribution requirement and a condition of using this license. It does not restrict anyone from using these ideas — it only asks beneficiaries to state their source.
+
+**4.3** This Section does not claim exclusivity over ideas, nor does it restrict independent creation of similar ideas.
+
+### 5. Giving Back
+
+**5.1** The Author encourages (but does not require) you to contribute improvements, fixes and enhancements back to the original project or to the Chinese open-source community.
+**5.2** The Author encourages (but does not require) you to help others and pass this openness on.
+**5.3** This license carries no political position and does not require agreement with any view of the Author.
+
+### 6. Disclaimer of Warranty
+
+**6.1** The Work is provided "AS IS", without warranty of any kind, express or implied, including merchantability, fitness for a particular purpose, title and non-infringement.
+**6.2** In no event shall the Author be liable for any direct, indirect, incidental, special, punitive or consequential damages, including loss of data, device damage, business interruption or lost profits, even if advised of such possibility.
+**6.3** You are solely responsible for evaluating fitness and bearing the risk of use. For system-level, security-level or production operations, verify in an isolated environment first.
+
+### 7. Termination and Reinstatement
+
+**7.1** Any violation of this license (especially Section 3) automatically terminates all rights granted to you.
+**7.2** If you cure the violation within 30 days after notice from the Author, your rights are automatically reinstated.
+**7.3** Termination does not affect liability for violations before termination, nor the effect of Section 6.
+
+### 8. License Versions
+
+**8.1** The current effective version is 1.0 (YOSL-1.0).
+**8.2** The Author may publish later versions; a Work not stating a version is governed by the latest published version.
+**8.3** Works released under an earlier version may continue to be used under that version.
+
+### 9. Governing Law and Disputes
+
+**9.1** This license is governed by the laws of the People's Republic of China.
+**9.2** Disputes shall first be resolved through friendly negotiation; failing that, by the competent people's court at the Author's domicile.
+
+### 10. Miscellaneous
+
+**10.1** This license does not exclude, limit or transfer the Author's moral rights, including the right of attribution, the right of modification and the right of integrity, which are inalienable and perpetual.
+**10.2** If any provision is held invalid or unenforceable, the remaining provisions remain in full effect.
+**10.3** This license is published in Chinese and English, both equally authentic; in case of ambiguity, the Chinese text prevails.
+**10.4** This license supersedes any prior oral or written license for the same Work.
+
+---
+
+---
+
+## 附录 A · 别名与译名
+
+| 条目 | 内容 |
+| --- | --- |
+| 法定署名 | **游尘（Youchen）** |
+| 别名 / 交流人格名 | **鲸進進（Jing Jinjin）** |
+| 使用场景 | 作者在项目交流、文档与发布说明中使用的协作人格名，可作为识别作者的别名一并标注 |
+| 法律地位 | 本协议的版权主体、署名主体与法律联系人**始终为「游尘（Youchen）」**，不因别名而改变；别名不得替代、冒充或削弱法定署名 |
+
+引用时如需连别名一并标注，可写：
+
+```
+本作品引用自游尘（Youchen，别名：鲸進進）的《作品名》版本
+原始出处：<项目地址>
+许可协议：游尘开放源码与署名许可协议 1.0（YOSL-1.0）
+```
+
+### Appendix A — Alias
+
+| Item | Content |
+| --- | --- |
+| Legal attribution | **Youchen (游尘)** |
+| Alias / persona name | **Jing Jinjin (鲸進進)** |
+| Usage | A collaboration persona name used by the Author in project communication, documentation and release notes; it may be cited as an alias identifying the Author. |
+| Legal status | The copyright holder, attribution subject and legal contact under this license **remain "Youchen (游尘)"** and are not changed by the alias. The alias may not replace, impersonate or weaken the legal attribution. |
+
+---
+
+*游尘开放源码与署名许可协议 1.0（YOSL-1.0）· 引用必须署名 · <https://github.com/youchen-yc>*

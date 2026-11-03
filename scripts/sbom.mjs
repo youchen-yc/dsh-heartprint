@@ -46,6 +46,12 @@ const ref = `pkg:npm/${pkg.name}@${pkg.version}`
 const seed = JSON.stringify({ name: pkg.name, version: pkg.version, files: files.map((file) => file.hash) })
 const serial = createHash('sha256').update(seed).digest('hex')
 const uuid = serial.replace(/^(.{8})(.{4})(.{4})(.{4})(.{12}).*$/, '$1-$2-$3-$4-$5')
+function licenseEntry(pkg) {
+  const value = String(pkg.license || '').trim()
+  if (value && /^[A-Za-z0-9.+-]+$/.test(value)) return [{ license: { id: value } }]
+  return [{ license: { name: 'Yuchen Open Source License 1.0 (YOSL-1.0)' } }]
+}
+
 const sbom = {
   bomFormat: 'CycloneDX',
   specVersion: '1.5',
@@ -59,7 +65,7 @@ const sbom = {
       'bom-ref': ref,
       name: pkg.name,
       version: pkg.version,
-      licenses: [{ license: { id: pkg.license || 'MIT' } }],
+      licenses: licenseEntry(pkg),
       purl: ref,
       properties: [
         { name: 'dsh.bundle.patch', value: pkg.dsh?.bundle?.patch || '' },

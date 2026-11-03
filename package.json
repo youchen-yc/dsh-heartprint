@@ -1,6 +1,6 @@
 {
   "name": "dsh-heartprint",
-  "version": "2.4.1",
+  "version": "2.4.2",
   "description": "心印：记忆类插件。可设置名字、性格与人格；只淡忘琐事，重要的会保留，特殊的会被记住。",
   "type": "module",
   "exports": {
@@ -17,7 +17,8 @@
     "locale/*.json",
     "icon.svg",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "NOTICE"
   ],
   "dsh": {
     "bundle": {
@@ -38,8 +39,8 @@
     "deepseek-harness",
     "memory"
   ],
-  "license": "MIT",
-  "author": "youchen-yc",
+  "license": "SEE LICENSE IN LICENSE",
+  "author": "游尘 (Youchen)",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/youchen-yc/dsh-heartprint.git"
