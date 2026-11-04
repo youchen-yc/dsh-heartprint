@@ -32,7 +32,10 @@ const rels = [...new Set((pkg.files || []).flatMap(expand))]
   .sort()
 
 const files = rels.map((rel) => {
-  const content = readFileSync(path.join(root, rel))
+  const raw = readFileSync(path.join(root, rel))
+  // 行尾归一化为 LF 再哈希：本地 Windows（CRLF）与 CI Linux（LF）必须得到同一份 SBOM。
+  // 发布清单里的文件都是文本；这里只消除行尾差异，不改变内容本身。
+  const content = Buffer.from(raw.toString('utf8').replace(/\r\n/g, '\n'), 'utf8')
   return {
     rel,
     hash: createHash('sha256').update(content).digest('hex'),

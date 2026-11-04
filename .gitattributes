@@ -1,0 +1,14 @@
+# 统一行尾：所有文本文件在仓库里一律用 LF
+# 目的：同一份代码在 Windows（本地）与 Linux（CI）检出后字节一致，
+# 否则 scripts/sbom.mjs 计算的文件哈希会因 CRLF/LF 不同而失配。
+* text=auto eol=lf
+
+# 明确文本类型（避免 git 把 .svg/.mjs 当二进制）
+*.js    text eol=lf
+*.mjs   text eol=lf
+*.json  text eol=lf
+*.md    text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.svg   text eol=lf
+*.txt   text eol=lf
