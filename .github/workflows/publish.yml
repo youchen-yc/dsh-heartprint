@@ -26,7 +26,18 @@ jobs:
         run: node scripts/release-check.mjs
       - name: Regenerate SBOM
         run: node scripts/sbom.mjs
+      - name: Check if version already published
+        id: version-check
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          if npm view "dsh-heartprint@$VERSION" version >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            echo "npm 上已存在 $VERSION，跳过发布（本地已发布的情况）"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Publish with provenance (SLSA / Sigstore)
+        if: steps.version-check.outputs.published == 'false'
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
