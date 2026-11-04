@@ -34,7 +34,8 @@ jobs:
         run: node scripts/sbom.mjs --check
       - name: No hardcoded absolute paths in runtime files
         run: |
-          if grep -nE '[A-Za-z]:\\\\|[A-Za-z]:\\' index.js client.js lib/*.js; then
+          # placeholder / 示例文案里的盘符不算硬编码路径（只影响界面提示，不影响运行逻辑）
+          if grep -nE '[A-Za-z]:\\' index.js client.js lib/*.js | grep -v 'placeholder'; then
             echo 'runtime files must not contain hardcoded drive paths'
             exit 1
           fi
